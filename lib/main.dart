@@ -1,0 +1,60 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:rglauncher/providers.dart';
+import 'package:rglauncher/screens/home_screen.dart';
+import 'package:rglauncher/widgets/background.dart';
+
+import 'widgets/screen_overlay.dart';
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ProviderScope(
+      child: Consumer(
+        builder: (context, ref, child) {
+          return MaterialApp(
+            title: 'RGLauncher',
+            debugShowCheckedModeBanner: false,
+            theme: ThemeData.dark().copyWith(
+              textTheme:
+                  GoogleFonts.barlowTextTheme(Typography.englishLike2021),
+              scaffoldBackgroundColor: Colors.transparent,
+            ),
+            navigatorObservers: [
+              ref.watch(routeObserverProvider),
+            ],
+            builder: (context, child) {
+              // Disable scrolling overglow animation
+              return NotificationListener<OverscrollIndicatorNotification>(
+                onNotification: (OverscrollIndicatorNotification overScroll) {
+                  overScroll.disallowIndicator();
+                  return false;
+                },
+                child: Stack(
+                  children: [
+                    const Positioned.fill(
+                      child: Background(),
+                    ),
+                    child ?? const SizedBox(),
+                    const ScreenOverlay(),
+                  ],
+                ),
+              );
+            },
+            home: const HomeScreen(),
+          );
+        },
+      ),
+    );
+  }
+}

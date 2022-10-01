@@ -6,7 +6,7 @@ class Background extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.purple,
+      color: Colors.teal.shade800,
       width: double.infinity,
       height: double.infinity,
     );

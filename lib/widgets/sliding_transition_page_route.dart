@@ -1,6 +1,6 @@
 import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
-import 'package:rglauncher/configs.dart';
+import 'package:rglauncher/data/configs.dart';
 
 class SlidingTransitionPageRoute<T> extends PageRouteBuilder<T> {
   SlidingTransitionPageRoute({

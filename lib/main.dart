@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:rglauncher/providers.dart';
+import 'package:rglauncher/data/providers.dart';
 import 'package:rglauncher/screens/home_screen.dart';
 import 'package:rglauncher/widgets/background.dart';
 
@@ -42,12 +42,16 @@ class MyApp extends StatelessWidget {
                   overScroll.disallowIndicator();
                   return false;
                 },
-                child: Stack(
-                  children: [
-                    const Background(),
-                    child ?? const SizedBox(),
-                    const ScreenOverlay(),
-                  ],
+                child: FocusTraversalGroup(
+                  // By default we had to disable this features since it affects joystick navigation
+                  descendantsAreTraversable: false,
+                  child: Stack(
+                    children: [
+                      const Background(),
+                      child ?? const SizedBox(),
+                      const ScreenOverlay(),
+                    ],
+                  ),
                 ),
               );
             },

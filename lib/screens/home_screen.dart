@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:rglauncher/configs.dart';
-import 'package:rglauncher/providers.dart';
+import 'package:rglauncher/data/configs.dart';
+import 'package:rglauncher/data/providers.dart';
 import 'package:rglauncher/screens/system_list_screen.dart';
 import 'package:rglauncher/widgets/command.dart';
 import 'package:rglauncher/widgets/gamepad_listener.dart';
@@ -23,11 +22,18 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class HomePage extends ConsumerWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends ConsumerState<HomePage> {
+  final _gridViewKey = GlobalKey<TwoLineGridViewState>();
+
+  @override
+  Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async => false,
       child: CommandWrapper(
@@ -35,7 +41,7 @@ class HomePage extends ConsumerWidget {
           Command(
             button: CommandButton.a,
             label: 'Open',
-            onTap: () => _openSystemListScreen(context),
+            onTap: () => _onButtonAPressed(context),
           ),
         ],
         child: GamepadListener(
@@ -47,50 +53,66 @@ class HomePage extends ConsumerWidget {
               ref.read(selectedMenuIndexProvider.state).state++;
             }
           },
+          onA: () => _onButtonAPressed(context),
+          onB: () {},
           child: TwoLineGridView(
+            key: _gridViewKey,
             padding: const EdgeInsets.all(64),
             childPadding: const EdgeInsets.all(4),
-            children: [
-              const TwoLineCustomSize(
+            items: [
+              const TwoLineGridItem(
+                large: true,
                 aspectRatio: 1.2,
                 child: LargeClock(),
               ),
               const TwoLineDivider(),
-              const AddMenuTile(),
+              const TwoLineGridItem(
+                child: AddMenuTile(),
+              ),
               const TwoLineDivider(),
-              MenuTile(
-                label: 'Favorites',
-                icon: Icons.favorite_rounded,
+              TwoLineGridItem(
                 onTap: () => _openSingleListScreen(context, 'Favorites'),
-              ),
-              MenuTile(
-                label: 'Recent',
-                icon: Icons.history_rounded,
-                onTap: () => _openSingleListScreen(context, 'Recent'),
-              ),
-              MenuTile(
-                label: 'Wishlist',
-                icon: Icons.bookmark_rounded,
-                onTap: () => _openSingleListScreen(context, 'Wishlist'),
-              ),
-              MenuTile(
-                label: 'New',
-                icon: Icons.auto_awesome_rounded,
-                onTap: () => _openSingleListScreen(context, 'New'),
-              ),
-              TwoLineCustomSize(
-                aspectRatio: 0.63,
-                child: MenuTile(
-                  label: 'All systems',
-                  icon: Icons.sports_esports_rounded,
-                  onTap: () => _openSystemListScreen(context),
+                child: const MenuTile(
+                  label: 'Favorites',
+                  icon: Icons.favorite_rounded,
                 ),
               ),
+              TwoLineGridItem(
+                onTap: () => _openSingleListScreen(context, 'Recent'),
+                child: const MenuTile(
+                  label: 'Recent',
+                  icon: Icons.history_rounded,
+                ),
+              ),
+              TwoLineGridItem(
+                onTap: () => _openSingleListScreen(context, 'Wishlist'),
+                child: const MenuTile(
+                  label: 'Wishlist',
+                  icon: Icons.bookmark_rounded,
+                ),
+              ),
+              TwoLineGridItem(
+                onTap: () => _openSingleListScreen(context, 'New'),
+                child: const MenuTile(
+                  label: 'New',
+                  icon: Icons.auto_awesome_rounded,
+                ),
+              ),
+              TwoLineGridItem(
+                aspectRatio: 0.63,
+                large: true,
+                child: const MenuTile(
+                  label: 'All systems',
+                  icon: Icons.sports_esports_rounded,
+                ),
+                onTap: () => _openSystemListScreen(context),
+              ),
               const TwoLineDivider(),
-              MenuTile(
-                label: 'All apps',
-                icon: Icons.apps_rounded,
-                onTap: () {},
+              const TwoLineGridItem(
+                child: MenuTile(
+                  label: 'All apps',
+                  icon: Icons.apps_rounded,
+                ),
               ),
             ],
           ),
@@ -121,6 +143,11 @@ class HomePage extends ConsumerWidget {
         direction: Axis.vertical,
       ),
     );
+  }
+
+  void _onButtonAPressed(BuildContext context) {
+    final selectedIndex = ref.read(selectedMenuIndexProvider);
+    _gridViewKey.currentState?.launchItemAtIndex(selectedIndex);
   }
 }
 
@@ -153,11 +180,9 @@ class SelectionWrapper extends ConsumerWidget {
 }
 
 class MenuTile extends StatelessWidget {
-  const MenuTile({Key? key, required this.label, this.onTap, this.icon})
-      : super(key: key);
+  const MenuTile({Key? key, required this.label, this.icon}) : super(key: key);
 
   final String label;
-  final VoidCallback? onTap;
   final IconData? icon;
 
   @override
@@ -167,23 +192,20 @@ class MenuTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       color: Colors.white38,
       elevation: 2,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          child: Stack(
-            children: [
-              Text(label, style: textTheme.titleLarge),
-              Align(
-                alignment: Alignment.bottomRight,
-                child: Icon(
-                  icon,
-                  size: 56,
-                  color: Colors.white38,
-                ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        child: Stack(
+          children: [
+            Text(label, style: textTheme.titleLarge),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Icon(
+                icon,
+                size: 56,
+                color: Colors.white38,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -200,8 +222,7 @@ class AddMenuTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(width: 2, color: Colors.white38),
       ),
-      child: InkWell(
-        onTap: () {},
+      child: SizedBox.expand(
         child: const Icon(
           Icons.add_rounded,
           color: Colors.white38,

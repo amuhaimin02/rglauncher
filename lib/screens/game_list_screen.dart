@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
-import '../configs.dart';
-import '../providers.dart';
+import '../data/configs.dart';
+import '../data/providers.dart';
 import '../widgets/command.dart';
 import '../widgets/custom_page_view.dart';
 import '../widgets/gamepad_listener.dart';

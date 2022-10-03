@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:rglauncher/providers.dart';
+import 'package:rglauncher/data/providers.dart';
 import 'package:rglauncher/screens/game_list_screen.dart';
 
-import '../configs.dart';
+import '../data/configs.dart';
 import '../widgets/command.dart';
 import '../widgets/gamepad_listener.dart';
 import '../widgets/sliding_transition_page_route.dart';
@@ -98,7 +98,7 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
           ),
         ),
         Expanded(
-          flex: 8,
+          flex: 5,
           child: PageView(
             controller: _pageController,
             children: [
@@ -108,8 +108,8 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
                   child: AnimatedContainer(
                     transform: currentSystemIndex == i
                         ? Matrix4.identity()
-                        : (Matrix4.identity()..scale(0.8)),
-                    transformAlignment: Alignment.center,
+                        : (Matrix4.identity()..scale(0.75)),
+                    transformAlignment: Alignment.bottomCenter,
                     // padding: currentSystemIndex == i
                     //     ? EdgeInsets.zero
                     //     : const EdgeInsets.all(16),
@@ -135,7 +135,7 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
             },
           ),
         ),
-        const Spacer(flex: 3)
+        const Spacer(flex: 2)
       ],
     );
   }

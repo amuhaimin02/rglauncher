@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rglauncher/utils/extensions.dart';
 
-import 'widgets/command.dart';
+import '../widgets/command.dart';
 
 final routeObserverProvider = Provider((ref) => RouteObserver<PageRoute>());
 

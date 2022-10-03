@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../providers.dart';
+import '../data/providers.dart';
 import 'command.dart';
 
 class ScreenOverlay extends StatelessWidget {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rglauncher/widgets/small_label.dart';
 
 import '../configs.dart';
 import '../providers.dart';
@@ -46,7 +47,6 @@ class _GameListScreenState extends ConsumerState<GameListScreen> {
         ),
       ],
       child: Scaffold(
-        backgroundColor: Colors.black,
         body: Stack(
           children: [
             const GameBackground(),
@@ -55,7 +55,9 @@ class _GameListScreenState extends ConsumerState<GameListScreen> {
               itemCount: allSystems.length,
               itemBuilder: (context, index) {
                 return GameListContent(
-                  system: allSystems[index],
+                  title: allSystems[index],
+                  gameList: List.generate(
+                      50, (index) => 'Street Fighter ${index + 1}th Edition'),
                 );
               },
               onPageChanged: (newIndex) {
@@ -65,6 +67,34 @@ class _GameListScreenState extends ConsumerState<GameListScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class SingleGameListScreen extends StatelessWidget {
+  const SingleGameListScreen(
+      {Key? key, required this.title, required this.gameList})
+      : super(key: key);
+
+  final String title;
+  final List<String> gameList;
+
+  @override
+  Widget build(BuildContext context) {
+    return CommandWrapper(
+      commands: [
+        Command(button: CommandButton.x, label: 'Options', onTap: () {}),
+        Command(button: CommandButton.a, label: 'Open', onTap: () {}),
+        Command(
+          button: CommandButton.b,
+          label: 'Back',
+          onTap: () => Navigator.pop(context),
+        ),
+      ],
+      child: GameListContent(
+        title: title,
+        gameList: gameList,
       ),
     );
   }
@@ -87,36 +117,47 @@ class GameBackground extends ConsumerWidget {
 }
 
 class GameListContent extends ConsumerWidget {
-  const GameListContent({Key? key, required this.system}) : super(key: key);
+  const GameListContent({Key? key, required this.title, required this.gameList})
+      : super(key: key);
 
-  final String system;
+  final String title;
+  final List<String> gameList;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        Padding(
+          padding:
+              const EdgeInsets.all(20.0) - const EdgeInsets.only(bottom: 20),
+          child: Row(
             children: [
-              Padding(
-                padding: const EdgeInsets.all(20.0) -
-                    const EdgeInsets.only(bottom: 20),
-                child: Text(
-                  system,
-                  style: textTheme.headlineSmall!
-                      .copyWith(fontWeight: FontWeight.bold),
-                ),
+              Text(
+                title,
+                style: textTheme.headlineSmall!
+                    .copyWith(fontWeight: FontWeight.bold),
               ),
-              const Expanded(
-                child: GameListView(),
-              ),
+              const SizedBox(width: 12),
+              SmallLabel(
+                text: Text(gameList.length.toString()),
+              )
             ],
           ),
         ),
-        const Expanded(
-          child: GameDetailPane(),
+        Expanded(
+          child: Row(
+            children: [
+              Expanded(
+                child: GameListView(
+                  gameList: gameList,
+                ),
+              ),
+              const Expanded(
+                child: GameDetailPane(),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -148,7 +189,8 @@ class GameDetailPane extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Text('Game $selectedGameIndex', style: textTheme.titleLarge)
+            Text('Game $selectedGameIndex', style: textTheme.titleLarge),
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -159,7 +201,10 @@ class GameDetailPane extends ConsumerWidget {
 class GameListView extends ConsumerStatefulWidget {
   const GameListView({
     Key? key,
+    required this.gameList,
   }) : super(key: key);
+
+  final List<String> gameList;
 
   @override
   ConsumerState<GameListView> createState() => _GameListViewState();
@@ -254,25 +299,28 @@ class _GameListViewState extends ConsumerState<GameListView> {
                 padding: const EdgeInsets.all(12.0) +
                     EdgeInsets.symmetric(vertical: widgetHeight / 2.5),
                 controller: _scrollController,
-                itemCount: 100,
+                itemCount: widget.gameList.length,
                 itemBuilder: (context, index) {
                   return Material(
                     color: index == _currentIndex
                         ? Colors.white
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      alignment: AlignmentDirectional.centerStart,
-                      height: gameListItemHeight,
-                      child: Text(
-                        'Super Hero Fighter ${index}th Edition',
-                        style: textTheme.bodyLarge!.copyWith(
-                          color: index == _currentIndex
-                              ? Colors.black
-                              : Colors.white,
+                    child: InkWell(
+                      onTap: () => _onListTap(context, index),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        alignment: AlignmentDirectional.centerStart,
+                        height: gameListItemHeight,
+                        child: Text(
+                          widget.gameList[index],
+                          style: textTheme.bodyLarge!.copyWith(
+                            color: index == _currentIndex
+                                ? Colors.black
+                                : Colors.white,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   );
@@ -283,6 +331,14 @@ class _GameListViewState extends ConsumerState<GameListView> {
         ),
       ),
     );
+  }
+
+  void _onListTap(BuildContext context, int index) {
+    final currentIndex = ref.read(selectedGameListIndexProvider);
+    if (currentIndex == index) {
+    } else {
+      ref.read(selectedGameListIndexProvider.state).state = index;
+    }
   }
 
   void _hardSetIndex(int newIndex) {

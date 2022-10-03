@@ -8,11 +8,13 @@ class SlidingTransitionPageRoute<T> extends PageRouteBuilder<T> {
     Axis? direction,
   }) : super(
           pageBuilder: (context, anim1, anim2) => builder(context),
-          transitionDuration: defaultAnimationDuration,
+          transitionDuration: defaultPageTransitionDuration,
+          reverseTransitionDuration: defaultPageTransitionDuration,
           transitionsBuilder: (context, anim1, anim2, child) {
             return SharedAxisTransition(
               animation: anim1,
               secondaryAnimation: anim2,
+              fillColor: Colors.transparent,
               transitionType: () {
                 if (direction == null) {
                   return SharedAxisTransitionType.scaled;

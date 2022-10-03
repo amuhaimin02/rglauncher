@@ -65,9 +65,15 @@ class SystemPageView extends ConsumerStatefulWidget {
 
 class _SystemPageViewState extends ConsumerState<SystemPageView> {
   late final _pageController = PageController(
-    viewportFraction: 0.32,
+    viewportFraction: _calculateViewportFraction(),
     initialPage: ref.watch(selectedSystemIndexProvider),
   );
+
+  double _calculateViewportFraction() {
+    final screenSize = MediaQuery.of(context).size;
+    final viewportFraction = screenSize.height / screenSize.width;
+    return viewportFraction * 0.5;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +101,6 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
           flex: 8,
           child: PageView(
             controller: _pageController,
-            pageSnapping: false,
             children: [
               for (int i = 0; i < systemList.length; i++)
                 InkWell(

@@ -6,6 +6,7 @@ import 'package:rglauncher/providers.dart';
 import 'package:rglauncher/screens/home_screen.dart';
 import 'package:rglauncher/widgets/background.dart';
 
+import 'screens/splash_screen.dart';
 import 'widgets/screen_overlay.dart';
 
 void main() {
@@ -29,6 +30,7 @@ class MyApp extends StatelessWidget {
               textTheme:
                   GoogleFonts.barlowTextTheme(Typography.englishLike2021),
               scaffoldBackgroundColor: Colors.transparent,
+              splashFactory: InkRipple.splashFactory,
             ),
             navigatorObservers: [
               ref.watch(routeObserverProvider),
@@ -42,16 +44,14 @@ class MyApp extends StatelessWidget {
                 },
                 child: Stack(
                   children: [
-                    const Positioned.fill(
-                      child: Background(),
-                    ),
+                    const Background(),
                     child ?? const SizedBox(),
                     const ScreenOverlay(),
                   ],
                 ),
               );
             },
-            home: const HomeScreen(),
+            home: const SplashScreen(),
           );
         },
       ),

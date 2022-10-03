@@ -29,8 +29,6 @@ final connectivityStateProvider =
   return Connectivity().onConnectivityChanged;
 });
 
-final selectedGameListIndexProvider = StateProvider((ref) => 0);
-
 final commandProvider = StateProvider<List<Command>>((ref) => []);
 
 final allSystemsProvider = Provider(
@@ -44,6 +42,10 @@ final allSystemsProvider = Provider(
 );
 
 final selectedSystemIndexProvider = StateProvider((ref) => 0);
+
+final selectedMenuIndexProvider = StateProvider((ref) => 0);
+
+final selectedGameListIndexProvider = StateProvider((ref) => 0);
 
 final selectedSystemProvider = StateProvider(
   (ref) =>

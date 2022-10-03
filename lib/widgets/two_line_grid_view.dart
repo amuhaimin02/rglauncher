@@ -10,21 +10,27 @@ class TwoLineGridView extends ConsumerStatefulWidget {
     required this.items,
     this.childPadding,
     this.padding,
+    this.onItemArranged,
+    this.itemLauncherCallback,
   }) : super(key: key);
 
   final List<TwoLineItem> items;
   final EdgeInsets? childPadding;
   final EdgeInsets? padding;
+  final Function(Function(int index) launcher)? itemLauncherCallback;
+  final Function(List<TwoLineItemType>)? onItemArranged;
 
   @override
-  ConsumerState<TwoLineGridView> createState() => TwoLineGridViewState();
+  ConsumerState<TwoLineGridView> createState() => _TwoLineGridViewState();
 }
 
-class TwoLineGridViewState extends ConsumerState<TwoLineGridView> {
+class _TwoLineGridViewState extends ConsumerState<TwoLineGridView> {
   late List<Widget> _arrangedChildren;
 
   Widget? _tempWidget;
   late List<VoidCallback?> _itemCommands;
+
+  late List<TwoLineItemType> _itemTypes;
 
   late final _scrollController = AutoScrollController();
 
@@ -37,16 +43,20 @@ class TwoLineGridViewState extends ConsumerState<TwoLineGridView> {
   void _arrangeChildren() {
     int itemIndex = 0;
     _arrangedChildren = [];
+    _itemTypes = [];
 
     for (final item in widget.items) {
       if (item is TwoLineGridItem) {
         if (item.large) {
           // Large item that span two rows
           _placeTempWidgetAlone();
+          _itemTypes.add(TwoLineItemType.large);
           _arrangedChildren.add(_itemToWidget(item, itemIndex++));
         } else {
           if (_tempWidget != null) {
             // Item at the bottom row (we merge two items in a single column)
+            _itemTypes.add(TwoLineItemType.top);
+            _itemTypes.add(TwoLineItemType.bottom);
             _arrangedChildren.add(
                 _mergeChildren(_tempWidget!, _itemToWidget(item, itemIndex++)));
             _tempWidget = null;
@@ -68,6 +78,8 @@ class TwoLineGridViewState extends ConsumerState<TwoLineGridView> {
         .whereType<TwoLineGridItem>()
         .map((e) => (e).onTap)
         .toList();
+    widget.onItemArranged?.call(_itemTypes);
+    widget.itemLauncherCallback?.call(_itemLauncher);
   }
 
   Widget _mergeChildren(Widget child1, Widget child2) {
@@ -97,6 +109,7 @@ class TwoLineGridViewState extends ConsumerState<TwoLineGridView> {
 
   void _placeTempWidgetAlone() {
     if (_tempWidget != null) {
+      _itemTypes.add(TwoLineItemType.top);
       _arrangedChildren.add(_mergeChildren(_tempWidget!, const SizedBox()));
       _tempWidget = null;
     }
@@ -142,13 +155,19 @@ class TwoLineGridViewState extends ConsumerState<TwoLineGridView> {
     );
   }
 
-  void launchItemAtIndex(int index) {
+  void _itemLauncher(int index) {
     if (index < 0 || index > _itemCommands.length) {
       throw RangeError.range(index, 0, _itemCommands.length);
     }
     _itemCommands[index]?.call();
   }
+
+  int get itemSize {
+    return _itemCommands.length;
+  }
 }
+
+enum TwoLineItemType { large, top, bottom, divider }
 
 class TwoLineItem {}
 

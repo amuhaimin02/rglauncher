@@ -3,3 +3,13 @@ Stream<T> onceAndPeriodic<T>(
   yield computation(0);
   yield* Stream.periodic(period, (i) => computation(i + 1));
 }
+
+extension SafeIndexAccessList<E> on List<E> {
+  E? get(int index) {
+    try {
+      return this[index];
+    } on RangeError {
+      return null;
+    }
+  }
+}

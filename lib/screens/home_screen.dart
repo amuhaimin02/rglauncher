@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rglauncher/data/configs.dart';
 import 'package:rglauncher/data/providers.dart';
 import 'package:rglauncher/screens/system_list_screen.dart';
+import 'package:rglauncher/utils/extensions.dart';
 import 'package:rglauncher/widgets/command.dart';
 import 'package:rglauncher/widgets/gamepad_listener.dart';
 import 'package:rglauncher/widgets/sliding_transition_page_route.dart';
@@ -30,7 +31,8 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
-  final _gridViewKey = GlobalKey<TwoLineGridViewState>();
+  late List<TwoLineItemType> _itemTypes;
+  late Function(int index) _itemLauncher;
 
   @override
   Widget build(BuildContext context) {
@@ -47,18 +49,48 @@ class _HomePageState extends ConsumerState<HomePage> {
         child: GamepadListener(
           key: const ValueKey('home'),
           onDirectional: (direction, repeating) {
-            if (direction == GamepadDirection.left) {
-              ref.read(selectedMenuIndexProvider.state).state--;
-            } else if (direction == GamepadDirection.right) {
-              ref.read(selectedMenuIndexProvider.state).state++;
+            final currentIndex = ref.read(selectedMenuIndexProvider);
+
+            switch (direction) {
+              case GamepadDirection.up:
+                _goToMenuIndex(currentIndex - 1);
+                break;
+              case GamepadDirection.down:
+                _goToMenuIndex(currentIndex + 1);
+                break;
+              case GamepadDirection.left:
+                if ((_itemTypes[currentIndex] == TwoLineItemType.top &&
+                        _itemTypes.get(currentIndex - 1) ==
+                            TwoLineItemType.bottom) ||
+                    (_itemTypes[currentIndex] == TwoLineItemType.bottom &&
+                        _itemTypes.get(currentIndex - 1) ==
+                            TwoLineItemType.top)) {
+                  _goToMenuIndex(currentIndex - 2);
+                } else {
+                  _goToMenuIndex(currentIndex - 1);
+                }
+                break;
+              case GamepadDirection.right:
+                if ((_itemTypes[currentIndex] == TwoLineItemType.top &&
+                        _itemTypes.get(currentIndex + 1) ==
+                            TwoLineItemType.bottom) ||
+                    (_itemTypes[currentIndex] == TwoLineItemType.bottom &&
+                        _itemTypes.get(currentIndex + 1) ==
+                            TwoLineItemType.top)) {
+                  _goToMenuIndex(currentIndex + 2);
+                } else {
+                  _goToMenuIndex(currentIndex + 1);
+                }
+                break;
             }
           },
           onA: () => _onButtonAPressed(context),
           onB: () {},
           child: TwoLineGridView(
-            key: _gridViewKey,
             padding: const EdgeInsets.all(64),
             childPadding: const EdgeInsets.all(4),
+            onItemArranged: (types) => _itemTypes = types,
+            itemLauncherCallback: (launcher) => _itemLauncher = launcher,
             items: [
               const TwoLineGridItem(
                 large: true,
@@ -121,6 +153,11 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
+  void _goToMenuIndex(int newIndex) {
+    newIndex = newIndex.clamp(0, _itemTypes.length - 1);
+    ref.read(selectedMenuIndexProvider.state).state = newIndex;
+  }
+
   void _openSystemListScreen(BuildContext context) {
     Navigator.push(
       context,
@@ -147,7 +184,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   void _onButtonAPressed(BuildContext context) {
     final selectedIndex = ref.read(selectedMenuIndexProvider);
-    _gridViewKey.currentState?.launchItemAtIndex(selectedIndex);
+    _itemLauncher(selectedIndex);
   }
 }
 
@@ -222,8 +259,8 @@ class AddMenuTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(width: 2, color: Colors.white38),
       ),
-      child: SizedBox.expand(
-        child: const Icon(
+      child: const SizedBox.expand(
+        child: Icon(
           Icons.add_rounded,
           color: Colors.white38,
           size: 48,

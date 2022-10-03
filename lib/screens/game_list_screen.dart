@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rglauncher/utils/range_limiting.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
 import '../data/configs.dart';
@@ -342,6 +343,7 @@ class _GameListViewState extends ConsumerState<GameListView> {
   }
 
   void _hardSetIndex(int newIndex) {
+    newIndex = newIndex.clamp(0, widget.gameList.length - 1);
     ref.read(selectedGameListIndexProvider.state).state = newIndex;
     setState(() {
       _currentIndex = newIndex;
@@ -350,6 +352,8 @@ class _GameListViewState extends ConsumerState<GameListView> {
 
   void _softSetIndex(int newIndex, {bool animate = false}) {
     if (_currentIndex == newIndex) return;
+    newIndex = newIndex.clamp(0, widget.gameList.length - 1);
+
     if (animate) {
       _scrollController.jumpTo(
         newIndex * gameListItemHeight,

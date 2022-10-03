@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rglauncher/data/providers.dart';
 import 'package:rglauncher/screens/game_list_screen.dart';
+import 'package:rglauncher/utils/range_limiting.dart';
 
 import '../data/configs.dart';
 import '../widgets/command.dart';
@@ -30,10 +31,21 @@ class SystemListScreen extends ConsumerWidget {
         body: GamepadListener(
           key: const ValueKey('system'),
           onDirectional: (direction, repeating) {
+            int itemSize = ref.read(allSystemsProvider).length;
             if (direction == GamepadDirection.left) {
-              ref.read(selectedSystemIndexProvider.state).state--;
+              rangeLimit(
+                value: ref.read(selectedSystemIndexProvider) - 1,
+                max: itemSize,
+                ifInRange: () =>
+                    ref.read(selectedSystemIndexProvider.state).state--,
+              );
             } else if (direction == GamepadDirection.right) {
-              ref.read(selectedSystemIndexProvider.state).state++;
+              rangeLimit(
+                value: ref.read(selectedSystemIndexProvider) + 1,
+                max: itemSize,
+                ifInRange: () =>
+                    ref.read(selectedSystemIndexProvider.state).state++,
+              );
             }
           },
           onA: () => _openGameListScreen(context),

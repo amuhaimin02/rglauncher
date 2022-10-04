@@ -56,7 +56,7 @@ class _GameListScreenState extends ConsumerState<GameListScreen> {
               itemCount: allSystems.length,
               itemBuilder: (context, index) {
                 return GameListContent(
-                  title: allSystems[index],
+                  title: allSystems[index].name,
                   gameList: List.generate(
                       50, (index) => 'Street Fighter ${index + 1}th Edition'),
                 );

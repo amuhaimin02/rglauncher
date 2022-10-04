@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rglauncher/data/providers.dart';
 import 'package:rglauncher/screens/game_list_screen.dart';
 import 'package:rglauncher/utils/range_limiting.dart';
+import 'package:rglauncher/widgets/small_label.dart';
 
 import '../data/configs.dart';
 import '../widgets/command.dart';
@@ -103,12 +104,11 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
     return Column(
       children: [
         const Spacer(flex: 1),
-        Expanded(
+        const Expanded(
           flex: 4,
-          child: Center(
-            child: Text(currentSystem, style: textTheme.headlineSmall),
-          ),
+          child: GameSystemDetail(),
         ),
+        const Spacer(flex: 1),
         Expanded(
           flex: 5,
           child: PageView(
@@ -159,6 +159,52 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
       SlidingTransitionPageRoute(
         builder: (context) => const GameListScreen(),
         direction: Axis.vertical,
+      ),
+    );
+  }
+}
+
+class GameSystemDetail extends ConsumerWidget {
+  const GameSystemDetail({
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final system = ref.watch(selectedSystemProvider);
+    final textTheme = Theme.of(context).textTheme;
+    return Container(
+      width: 600,
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(system.producer, style: textTheme.titleMedium),
+                Text(system.name, style: textTheme.headlineMedium),
+                const SizedBox(height: 8),
+                const SmallLabel(text: Text('50 games'))
+              ],
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: VerticalDivider(
+              color: Colors.white38,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              system.description,
+              style: textTheme.bodySmall!.copyWith(color: Colors.white54),
+              maxLines: 6,
+              overflow: TextOverflow.fade,
+            ),
+          )
+        ],
       ),
     );
   }

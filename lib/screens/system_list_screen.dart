@@ -92,8 +92,6 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
   Widget build(BuildContext context) {
     final systemList = ref.watch(allSystemsProvider);
     final currentSystemIndex = ref.watch(selectedSystemIndexProvider);
-    final currentSystem = ref.watch(selectedSystemProvider);
-    final textTheme = Theme.of(context).textTheme;
     ref.listen(selectedSystemIndexProvider, (prevIndex, newIndex) {
       _pageController.animateToPage(
         newIndex,
@@ -128,15 +126,16 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
                     duration: defaultAnimationDuration,
                     curve: defaultAnimationCurve,
                     alignment: Alignment.center,
-                    child: Material(
-                      color: Colors.white38,
-                      clipBehavior: Clip.antiAlias,
-                      borderRadius: BorderRadius.circular(16),
-                      elevation: 4,
-                      child: AspectRatio(
-                        aspectRatio: 1,
-                        child:
-                            Image.network('https://picsum.photos/320/320?r=$i'),
+                    child: AspectRatio(
+                      aspectRatio: 1,
+                      child: Material(
+                        color: Colors.white,
+                        clipBehavior: Clip.antiAlias,
+                        borderRadius: BorderRadius.circular(16),
+                        elevation: 4,
+                        child: Image.network(
+                          systemList[i].imageLink,
+                        ),
                       ),
                     ),
                   ),

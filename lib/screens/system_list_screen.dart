@@ -101,14 +101,12 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
     });
     return Column(
       children: [
-        const Spacer(flex: 1),
         const Expanded(
-          flex: 4,
+          flex: 6,
           child: GameSystemDetail(),
         ),
-        const Spacer(flex: 1),
         Expanded(
-          flex: 5,
+          flex: 6,
           child: PageView(
             controller: _pageController,
             children: [
@@ -174,7 +172,7 @@ class GameSystemDetail extends ConsumerWidget {
     final textTheme = Theme.of(context).textTheme;
     return Container(
       width: 600,
-      margin: const EdgeInsets.symmetric(horizontal: 24),
+      margin: const EdgeInsets.all(24),
       child: Row(
         children: [
           Expanded(
@@ -184,8 +182,7 @@ class GameSystemDetail extends ConsumerWidget {
               children: [
                 Text(system.producer, style: textTheme.titleMedium),
                 Text(system.name, style: textTheme.headlineMedium),
-                const SizedBox(height: 8),
-                const SmallLabel(text: Text('50 games'))
+                // const SizedBox(height: 8),
               ],
             ),
           ),
@@ -195,12 +192,12 @@ class GameSystemDetail extends ConsumerWidget {
               color: Colors.white38,
             ),
           ),
-          Expanded(
-            child: Text(
-              system.description,
-              style: textTheme.bodySmall!.copyWith(color: Colors.white54),
-              maxLines: 6,
-              overflow: TextOverflow.fade,
+          const Expanded(
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: SmallLabel(
+                text: Text('50 games'),
+              ),
             ),
           )
         ],

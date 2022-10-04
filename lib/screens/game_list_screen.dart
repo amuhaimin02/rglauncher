@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:rglauncher/utils/range_limiting.dart';
+import 'package:rglauncher/tasks/launch_game_from_file.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
 import '../data/configs.dart';
@@ -37,37 +37,26 @@ class _GameListScreenState extends ConsumerState<GameListScreen> {
         curve: defaultAnimationCurve,
       );
     });
-    return CommandWrapper(
-      commands: [
-        Command(button: CommandButton.x, label: 'Options', onTap: () {}),
-        Command(button: CommandButton.a, label: 'Open', onTap: () {}),
-        Command(
-          button: CommandButton.b,
-          label: 'Back',
-          onTap: () => Navigator.pop(context),
-        ),
-      ],
-      child: Scaffold(
-        body: Stack(
-          children: [
-            const GameBackground(),
-            CustomPageView.builder(
-              controller: _pageController,
-              itemCount: allSystems.length,
-              itemBuilder: (context, index) {
-                return GameListContent(
-                  title: allSystems[index].name,
-                  gameList: List.generate(
-                      50, (index) => 'Street Fighter ${index + 1}th Edition'),
-                );
-              },
-              onPageChanged: (newIndex) {
-                ref.read(selectedSystemIndexProvider.state).state = newIndex;
-                ref.read(selectedGameListIndexProvider.state).state = 0;
-              },
-            ),
-          ],
-        ),
+    return Scaffold(
+      body: Stack(
+        children: [
+          const GameBackground(),
+          CustomPageView.builder(
+            controller: _pageController,
+            itemCount: allSystems.length,
+            itemBuilder: (context, index) {
+              return GameListContent(
+                title: allSystems[index].name,
+                gameList: List.generate(
+                    50, (index) => 'Street Fighter ${index + 1}th Edition'),
+              );
+            },
+            onPageChanged: (newIndex) {
+              ref.read(selectedSystemIndexProvider.state).state = newIndex;
+              ref.read(selectedGameListIndexProvider.state).state = 0;
+            },
+          ),
+        ],
       ),
     );
   }
@@ -227,108 +216,126 @@ class _GameListViewState extends ConsumerState<GameListView> {
       );
     });
 
-    return GamepadListener(
-      key: const ValueKey('gamelist'),
-      onDirectional: (direction, repeating) {
-        switch (direction) {
-          case GamepadDirection.up:
-            if (repeating) {
-              _softSetIndex(_currentIndex - 1, animate: true);
-            } else {
-              _hardSetIndex(_currentIndex - 1);
-            }
-            break;
-          case GamepadDirection.down:
-            if (repeating) {
-              _softSetIndex(_currentIndex + 1, animate: true);
-            } else {
-              _hardSetIndex(_currentIndex + 1);
-            }
-            break;
-          case GamepadDirection.left:
-            if (repeating) return;
-            ref.read(selectedSystemIndexProvider.state).state--;
-            break;
-          case GamepadDirection.right:
-            if (repeating) return;
-            ref.read(selectedSystemIndexProvider.state).state++;
-            break;
-        }
-      },
-      onLeftShoulder: () {
-        _hardSetIndex(_currentIndex - 10);
-      },
-      onRightShoulder: () {
-        _hardSetIndex(_currentIndex + 10);
-      },
-      child: NotificationListener<ScrollNotification>(
-        onNotification: (scrollInfo) {
-          if (scrollInfo is ScrollUpdateNotification) {
-            final computedIndex =
-                (scrollInfo.metrics.pixels / gameListItemHeight).round();
-            _softSetIndex(computedIndex);
-            return true;
-          } else if (scrollInfo is UserScrollNotification) {
-            final computedIndex =
-                (scrollInfo.metrics.pixels / gameListItemHeight).round();
-            _hardSetIndex(computedIndex);
-            return true;
+    return CommandWrapper(
+      commands: [
+        Command(button: CommandButton.x, label: 'Options', onTap: () {}),
+        Command(
+          button: CommandButton.a,
+          label: 'Open',
+          onTap: () => _onItemSelected(context),
+        ),
+        Command(
+          button: CommandButton.b,
+          label: 'Back',
+          onTap: () => Navigator.pop(context),
+        ),
+      ],
+      child: GamepadListener(
+        key: const ValueKey('gamelist'),
+        onDirectional: (direction, repeating) {
+          switch (direction) {
+            case GamepadDirection.up:
+              if (repeating) {
+                _softSetIndex(_currentIndex - 1, animate: true);
+              } else {
+                _hardSetIndex(_currentIndex - 1);
+              }
+              break;
+            case GamepadDirection.down:
+              if (repeating) {
+                _softSetIndex(_currentIndex + 1, animate: true);
+              } else {
+                _hardSetIndex(_currentIndex + 1);
+              }
+              break;
+            case GamepadDirection.left:
+              if (repeating) return;
+              ref.read(selectedSystemIndexProvider.state).state--;
+              break;
+            case GamepadDirection.right:
+              if (repeating) return;
+              ref.read(selectedSystemIndexProvider.state).state++;
+              break;
           }
-          return false;
         },
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final widgetHeight = constraints.maxHeight;
-            return ShaderMask(
-              shaderCallback: (rect) {
-                return const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black,
-                    Colors.black,
-                    Colors.transparent
-                  ],
-                  stops: [0, 0.2, 0.8, 1],
-                ).createShader(
-                  Rect.fromLTRB(0, 0, rect.width, rect.height),
-                );
-              },
-              blendMode: BlendMode.dstIn,
-              child: ListView.builder(
-                padding: const EdgeInsets.all(12.0) +
-                    EdgeInsets.symmetric(vertical: widgetHeight / 2.5),
-                controller: _scrollController,
-                itemCount: widget.gameList.length,
-                itemBuilder: (context, index) {
-                  return Material(
-                    color: index == _currentIndex
-                        ? Colors.white
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                    child: InkWell(
-                      onTap: () => _onListTap(context, index),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        alignment: AlignmentDirectional.centerStart,
-                        height: gameListItemHeight,
-                        child: Text(
-                          widget.gameList[index],
-                          style: textTheme.bodyLarge!.copyWith(
-                            color: index == _currentIndex
-                                ? Colors.black
-                                : Colors.white,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
+        onLeftShoulder: () {
+          _hardSetIndex(_currentIndex - 10);
+        },
+        onRightShoulder: () {
+          _hardSetIndex(_currentIndex + 10);
+        },
+        onA: () {
+          _onItemSelected(context);
+        },
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (scrollInfo) {
+            if (scrollInfo is ScrollUpdateNotification) {
+              final computedIndex =
+                  (scrollInfo.metrics.pixels / gameListItemHeight).round();
+              _softSetIndex(computedIndex);
+              return true;
+            } else if (scrollInfo is UserScrollNotification) {
+              final computedIndex =
+                  (scrollInfo.metrics.pixels / gameListItemHeight).round();
+              _hardSetIndex(computedIndex);
+              return true;
+            }
+            return false;
+          },
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final widgetHeight = constraints.maxHeight;
+              return ShaderMask(
+                shaderCallback: (rect) {
+                  return const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black,
+                      Colors.black,
+                      Colors.transparent
+                    ],
+                    stops: [0, 0.2, 0.8, 1],
+                  ).createShader(
+                    Rect.fromLTRB(0, 0, rect.width, rect.height),
                   );
                 },
-              ),
-            );
-          },
+                blendMode: BlendMode.dstIn,
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(12.0) +
+                      EdgeInsets.symmetric(vertical: widgetHeight / 2.5),
+                  controller: _scrollController,
+                  itemCount: widget.gameList.length,
+                  itemBuilder: (context, index) {
+                    return Material(
+                      color: index == _currentIndex
+                          ? Colors.white
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      child: InkWell(
+                        onTap: () => _onListTap(context, index),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          alignment: AlignmentDirectional.centerStart,
+                          height: gameListItemHeight,
+                          child: Text(
+                            widget.gameList[index],
+                            style: textTheme.bodyLarge!.copyWith(
+                              color: index == _currentIndex
+                                  ? Colors.black
+                                  : Colors.white,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -337,6 +344,7 @@ class _GameListViewState extends ConsumerState<GameListView> {
   void _onListTap(BuildContext context, int index) {
     final currentIndex = ref.read(selectedGameListIndexProvider);
     if (currentIndex == index) {
+      _onItemSelected(context);
     } else {
       ref.read(selectedGameListIndexProvider.state).state = index;
     }
@@ -364,5 +372,9 @@ class _GameListViewState extends ConsumerState<GameListView> {
     setState(() {
       _currentIndex = newIndex;
     });
+  }
+
+  void _onItemSelected(BuildContext context) {
+    launchGameFromFile();
   }
 }

@@ -174,8 +174,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       SlidingTransitionPageRoute(
         builder: (context) => SingleGameListScreen(
           title: title,
-          gameList: List.generate(
-              50, (index) => 'Street Fighter ${index + 1}th Edition'),
+          gameList: [],
         ),
         direction: Axis.vertical,
       ),

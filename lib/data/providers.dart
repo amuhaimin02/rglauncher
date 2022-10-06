@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:battery_plus/battery_plus.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rglauncher/data/models.dart';
+import 'package:rglauncher/data/tasks.dart';
 import 'package:rglauncher/utils/extensions.dart';
 
 import '../widgets/command.dart';
@@ -42,6 +45,8 @@ final allSystemsProvider = Provider(
       producer: 'Nintendo',
       imageLink:
           'https://upload.wikimedia.org/wikipedia/commons/8/82/NES-Console-Set.jpg',
+      folderNames: ['NES'],
+      supportedExtensions: ['nes', 'zip'],
     ),
     const System(
       name: 'Game Boy Advance',
@@ -51,6 +56,8 @@ final allSystemsProvider = Provider(
       producer: 'Nintendo',
       imageLink:
           'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Nintendo-Game-Boy-Advance-Purple-FL.jpg/1280px-Nintendo-Game-Boy-Advance-Purple-FL.jpg',
+      folderNames: ['GBA'],
+      supportedExtensions: ['gba', 'zip', '7z'],
     ),
     const System(
       name: 'PlayStation',
@@ -60,6 +67,8 @@ final allSystemsProvider = Provider(
       producer: 'Sony',
       imageLink:
           'https://upload.wikimedia.org/wikipedia/commons/2/2c/PlayStationConsole_bkg-transparent.png',
+      folderNames: ['PSX'],
+      supportedExtensions: ['cue', 'chd', 'pbp'],
     ),
     const System(
       name: 'Dreamcast',
@@ -69,6 +78,8 @@ final allSystemsProvider = Provider(
       producer: 'Sega',
       imageLink:
           'https://upload.wikimedia.org/wikipedia/commons/8/81/Dreamcast-Console-Set.jpg',
+      folderNames: ['DC'],
+      supportedExtensions: ['cue', 'chd', 'pbp'],
     ),
     const System(
       name: 'PICO-8',
@@ -78,6 +89,8 @@ final allSystemsProvider = Provider(
       producer: 'Lexaloffle',
       imageLink:
           'https://raw.githubusercontent.com/fabricecaruso/es-theme-carbon/master/art/consoles/pico8.png',
+      folderNames: ['PICO8'],
+      supportedExtensions: ['png'],
     ),
   ],
 );
@@ -92,3 +105,12 @@ final selectedSystemProvider = StateProvider(
   (ref) =>
       ref.watch(allSystemsProvider)[ref.watch(selectedSystemIndexProvider)],
 );
+
+final gameLibraryProvider = FutureProvider((ref) async {
+  return await scanLibrariesFromStorage(
+    systems: ref.read(allSystemsProvider),
+    storagePaths: [
+      Directory('/sdcard/EmuROM'),
+    ],
+  );
+});

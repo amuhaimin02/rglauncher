@@ -6,6 +6,7 @@ import 'package:rglauncher/utils/range_limiting.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
 import '../data/configs.dart';
+import '../data/models.dart';
 import '../widgets/command.dart';
 import '../widgets/gamepad_listener.dart';
 import '../widgets/sliding_transition_page_route.dart';
@@ -92,6 +93,8 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
   Widget build(BuildContext context) {
     final systemList = ref.watch(allSystemsProvider);
     final currentSystemIndex = ref.watch(selectedSystemIndexProvider);
+    final gameLibrary = ref.watch(gameLibraryProvider);
+
     ref.listen(selectedSystemIndexProvider, (prevIndex, newIndex) {
       _pageController.animateToPage(
         newIndex,
@@ -99,53 +102,63 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
         curve: defaultAnimationCurve,
       );
     });
-    return Column(
-      children: [
-        const Expanded(
-          flex: 6,
-          child: GameSystemDetail(),
-        ),
-        Expanded(
-          flex: 6,
-          child: PageView(
-            controller: _pageController,
-            children: [
-              for (int i = 0; i < systemList.length; i++)
-                InkWell(
-                  onTap: () => _openGameListScreen(context, i),
-                  child: AnimatedContainer(
-                    transform: currentSystemIndex == i
-                        ? Matrix4.identity()
-                        : (Matrix4.identity()..scale(0.75)),
-                    transformAlignment: Alignment.bottomCenter,
-                    // padding: currentSystemIndex == i
-                    //     ? EdgeInsets.zero
-                    //     : const EdgeInsets.all(16),
-                    duration: defaultAnimationDuration,
-                    curve: defaultAnimationCurve,
-                    alignment: Alignment.center,
-                    child: AspectRatio(
-                      aspectRatio: 1,
-                      child: Material(
-                        color: Colors.white,
-                        clipBehavior: Clip.antiAlias,
-                        borderRadius: BorderRadius.circular(16),
-                        elevation: 4,
-                        child: Image.network(
-                          systemList[i].imageLink,
+
+    return gameLibrary.when(
+      error: (error, stack) => Text('$error\n$stack'),
+      loading: () => const CircularProgressIndicator(),
+      data: (library) {
+        return Column(
+          children: [
+            Expanded(
+              flex: 6,
+              child: GameSystemDetail(
+                system: systemList[currentSystemIndex],
+                totalGames: library[systemList[currentSystemIndex]]?.length,
+              ),
+            ),
+            Expanded(
+              flex: 6,
+              child: PageView(
+                controller: _pageController,
+                children: [
+                  for (int i = 0; i < library.length; i++)
+                    InkWell(
+                      onTap: () => _openGameListScreen(context, i),
+                      child: AnimatedContainer(
+                        transform: currentSystemIndex == i
+                            ? Matrix4.identity()
+                            : (Matrix4.identity()..scale(0.75)),
+                        transformAlignment: Alignment.bottomCenter,
+                        // padding: currentSystemIndex == i
+                        //     ? EdgeInsets.zero
+                        //     : const EdgeInsets.all(16),
+                        duration: defaultAnimationDuration,
+                        curve: defaultAnimationCurve,
+                        alignment: Alignment.center,
+                        child: AspectRatio(
+                          aspectRatio: 1,
+                          child: Material(
+                            color: Colors.white,
+                            clipBehavior: Clip.antiAlias,
+                            borderRadius: BorderRadius.circular(16),
+                            elevation: 4,
+                            child: Image.network(
+                              systemList[i].imageLink,
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ),
-            ],
-            onPageChanged: (index) {
-              ref.read(selectedSystemIndexProvider.state).state = index;
-            },
-          ),
-        ),
-        const Spacer(flex: 2)
-      ],
+                ],
+                onPageChanged: (index) {
+                  ref.read(selectedSystemIndexProvider.state).state = index;
+                },
+              ),
+            ),
+            const Spacer(flex: 2)
+          ],
+        );
+      },
     );
   }
 
@@ -161,14 +174,18 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
   }
 }
 
-class GameSystemDetail extends ConsumerWidget {
+class GameSystemDetail extends StatelessWidget {
   const GameSystemDetail({
     Key? key,
+    required this.system,
+    this.totalGames,
   }) : super(key: key);
 
+  final System system;
+  final int? totalGames;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final system = ref.watch(selectedSystemProvider);
+  Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     return Container(
       width: 600,
@@ -192,11 +209,11 @@ class GameSystemDetail extends ConsumerWidget {
               color: Colors.white38,
             ),
           ),
-          const Expanded(
+          Expanded(
             child: Align(
               alignment: AlignmentDirectional.centerStart,
               child: SmallLabel(
-                text: Text('50 games'),
+                text: Text('${totalGames ?? 0} games'),
               ),
             ),
           )

@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:rglauncher/tasks/launch_game_from_file.dart';
+import 'package:path/path.dart';
+import 'package:rglauncher/data/tasks.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
 import '../data/configs.dart';
@@ -30,6 +33,7 @@ class _GameListScreenState extends ConsumerState<GameListScreen> {
   @override
   Widget build(BuildContext context) {
     final allSystems = ref.watch(allSystemsProvider);
+
     ref.listen(selectedSystemIndexProvider, (prevIndex, newIndex) {
       _pageController.animateToPage(
         newIndex,
@@ -37,27 +41,35 @@ class _GameListScreenState extends ConsumerState<GameListScreen> {
         curve: defaultAnimationCurve,
       );
     });
-    return Scaffold(
-      body: Stack(
-        children: [
-          const GameBackground(),
-          CustomPageView.builder(
-            controller: _pageController,
-            itemCount: allSystems.length,
-            itemBuilder: (context, index) {
-              return GameListContent(
-                title: allSystems[index].name,
-                gameList: List.generate(
-                    50, (index) => 'Street Fighter ${index + 1}th Edition'),
-              );
-            },
-            onPageChanged: (newIndex) {
-              ref.read(selectedSystemIndexProvider.state).state = newIndex;
-              ref.read(selectedGameListIndexProvider.state).state = 0;
-            },
+
+    final gameLibrary = ref.watch(gameLibraryProvider);
+    return gameLibrary.when(
+      error: (error, stack) => Text('$error\n$stack'),
+      loading: () => const CircularProgressIndicator(),
+      data: (library) {
+        return Scaffold(
+          body: Stack(
+            children: [
+              const GameBackground(),
+              CustomPageView.builder(
+                controller: _pageController,
+                itemCount: allSystems.length,
+                itemBuilder: (context, index) {
+                  final system = allSystems[index];
+                  return GameListContent(
+                    title: system.name,
+                    gameList: library[system]!,
+                  );
+                },
+                onPageChanged: (newIndex) {
+                  ref.read(selectedSystemIndexProvider.state).state = newIndex;
+                  ref.read(selectedGameListIndexProvider.state).state = 0;
+                },
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -68,7 +80,7 @@ class SingleGameListScreen extends StatelessWidget {
       : super(key: key);
 
   final String title;
-  final List<String> gameList;
+  final List<File> gameList;
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +123,7 @@ class GameListContent extends ConsumerWidget {
       : super(key: key);
 
   final String title;
-  final List<String> gameList;
+  final List<File> gameList;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -194,7 +206,7 @@ class GameListView extends ConsumerStatefulWidget {
     required this.gameList,
   }) : super(key: key);
 
-  final List<String> gameList;
+  final List<File> gameList;
 
   @override
   ConsumerState<GameListView> createState() => _GameListViewState();
@@ -320,7 +332,7 @@ class _GameListViewState extends ConsumerState<GameListView> {
                           alignment: AlignmentDirectional.centerStart,
                           height: gameListItemHeight,
                           child: Text(
-                            widget.gameList[index],
+                            basename(widget.gameList[index].path),
                             style: textTheme.bodyLarge!.copyWith(
                               color: index == _currentIndex
                                   ? Colors.black
@@ -374,7 +386,8 @@ class _GameListViewState extends ConsumerState<GameListView> {
     });
   }
 
-  void _onItemSelected(BuildContext context) {
-    launchGameFromFile();
+  void _onItemSelected(BuildContext context) async {
+    final game = widget.gameList[_currentIndex];
+    launchGameFromFile(game);
   }
 }

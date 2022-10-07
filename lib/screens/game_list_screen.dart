@@ -12,8 +12,8 @@ import '../data/configs.dart';
 import '../data/providers.dart';
 import '../utils/navigate.dart';
 import '../widgets/command.dart';
-import '../widgets/custom_page_view.dart';
 import '../widgets/gamepad_listener.dart';
+import '../widgets/image_with_status.dart';
 
 class GameListScreen extends ConsumerStatefulWidget {
   const GameListScreen({super.key});
@@ -51,8 +51,9 @@ class _GameListScreenState extends ConsumerState<GameListScreen> {
       data: (library) {
         final systems = library.keys.toList();
         return LauncherScaffold(
-          backgroundImage:
-              const NetworkImage('https://picsum.photos/1280/720?r=1'),
+          backgroundImage: NetworkImage(
+            'https://picsum.photos/1280/720?g=${ref.watch(selectedGameListIndexProvider)}',
+          ),
           body: PageView.builder(
             controller: _pageController,
             itemCount: systems.length,
@@ -173,24 +174,41 @@ class GameDetailPane extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedGameIndex = ref.watch(selectedGameListIndexProvider);
+    final selectedGame = ref.watch(selectedGameProvider);
     return Center(
-      child: Container(
+      child: AnimatedContainer(
+        duration: defaultAnimationDuration,
+        curve: defaultAnimationCurve,
         margin: const EdgeInsets.only(bottom: 32),
         padding: const EdgeInsets.all(32),
-        width: 320,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Material(
-              elevation: 4,
-              borderRadius: BorderRadius.circular(16),
-              clipBehavior: Clip.antiAlias,
-              child: Image.network(
-                'https://picsum.photos/id/$selectedGameIndex/640/640',
-              ),
+        child: Material(
+          elevation: 4,
+          borderRadius: BorderRadius.circular(16),
+          clipBehavior: Clip.antiAlias,
+          color: Colors.grey.shade800,
+          child: selectedGame.when(
+            data: (game) {
+              if (game != null) {
+                return ImageWithStatus(
+                  image: NetworkImage(
+                      'https://picsum.photos/640/640?gg=${game.path}'),
+                );
+              } else {
+                return const Center(
+                  child: Text('No game'),
+                );
+              }
+            },
+            error: (error, stack) {
+              return const Center(
+                child: Text('Error'),
+              );
+            },
+            loading: () => const SizedBox(
+              width: 120,
+              height: 120,
             ),
-          ],
+          ),
         ),
       ),
     );

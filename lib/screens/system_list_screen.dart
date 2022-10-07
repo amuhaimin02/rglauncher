@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rglauncher/data/providers.dart';
 import 'package:rglauncher/data/services.dart';
 import 'package:rglauncher/screens/game_list_screen.dart';
-import 'package:rglauncher/widgets/changeable_background.dart';
 import 'package:rglauncher/widgets/loading_widget.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
@@ -23,49 +22,53 @@ class SystemListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final allSystems = ref.watch(allSystemsProvider);
-    return LauncherScaffold(
-      backgroundImage: const NetworkImage('https://picsum.photos/1280/720'),
-      body: CommandWrapper(
-        commands: [
-          Command(
-            button: CommandButton.a,
-            label: 'Open',
-            onTap: (context) => _openGameListScreen(context),
+    return allSystems.when(
+      loading: () => const LoadingWidget(),
+      error: (error, stack) => Text(error.toString()),
+      data: (library) {
+        return LauncherScaffold(
+          backgroundImage: NetworkImage(
+            'https://picsum.photos/1280/720?s=${ref.watch(selectedSystemIndexProvider)}',
           ),
-          Command(
-            button: CommandButton.b,
-            label: 'Back',
-            onTap: (context) => Navigate.back(),
+          body: CommandWrapper(
+            commands: [
+              Command(
+                button: CommandButton.a,
+                label: 'Open',
+                onTap: (context) => _openGameListScreen(context),
+              ),
+              Command(
+                button: CommandButton.b,
+                label: 'Back',
+                onTap: (context) => Navigate.back(),
+              ),
+            ],
+            child: GamepadListener(
+              key: const ValueKey('system'),
+              onDirectional: (direction, repeating) {
+                // int itemSize = ref.read(allSystemsProvider).length;
+                // if (direction == GamepadDirection.left) {
+                //   rangeLimit(
+                //     value: ref.read(selectedSystemIndexProvider) - 1,
+                //     max: itemSize,
+                //     ifInRange: () =>
+                //         ref.read(selectedSystemIndexProvider.state).state--,
+                //   );
+                // } else if (direction == GamepadDirection.right) {
+                //   rangeLimit(
+                //     value: ref.read(selectedSystemIndexProvider) + 1,
+                //     max: itemSize,
+                //     ifInRange: () =>
+                //         ref.read(selectedSystemIndexProvider.state).state++,
+                //   );
+                // }
+              },
+              onA: () => _openGameListScreen(context),
+              child: const SystemPageView(),
+            ),
           ),
-        ],
-        child: GamepadListener(
-          key: const ValueKey('system'),
-          onDirectional: (direction, repeating) {
-            // int itemSize = ref.read(allSystemsProvider).length;
-            // if (direction == GamepadDirection.left) {
-            //   rangeLimit(
-            //     value: ref.read(selectedSystemIndexProvider) - 1,
-            //     max: itemSize,
-            //     ifInRange: () =>
-            //         ref.read(selectedSystemIndexProvider.state).state--,
-            //   );
-            // } else if (direction == GamepadDirection.right) {
-            //   rangeLimit(
-            //     value: ref.read(selectedSystemIndexProvider) + 1,
-            //     max: itemSize,
-            //     ifInRange: () =>
-            //         ref.read(selectedSystemIndexProvider.state).state++,
-            //   );
-            // }
-          },
-          onA: () => _openGameListScreen(context),
-          child: allSystems.when(
-            loading: () => const LoadingWidget(),
-            error: (error, stack) => Text(error.toString()),
-            data: (systems) => SystemPageView(),
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 

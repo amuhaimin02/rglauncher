@@ -67,6 +67,13 @@ final selectedSystemProvider = FutureProvider((ref) async {
   return systems[ref.watch(selectedSystemIndexProvider)];
 });
 
+final selectedGameProvider = FutureProvider((ref) async {
+  final system = await ref.watch(selectedSystemProvider.future);
+  final library = await ref.watch(gameLibraryProvider.future);
+  final index = ref.watch(selectedGameListIndexProvider);
+  return library[system]?.get(index);
+});
+
 final gameLibraryProvider = FutureProvider((ref) async {
   final result = await compute(scanLibrariesFromStorageCompute, {
     'systems': await ref.read(allSystemsProvider.future),

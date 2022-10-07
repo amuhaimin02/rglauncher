@@ -11,7 +11,7 @@ class ChangeableBackground extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final image = ref.watch(currentBackgroundImageProvider);
-    print(image);
+
     return Container(
       color: Colors.grey.shade900,
       child: AnimatedSwitcher(
@@ -61,6 +61,14 @@ class _BackgroundWrapperState extends ConsumerState<BackgroundWrapper>
   }
 
   @override
+  void didUpdateWidget(covariant BackgroundWrapper oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.image != oldWidget.image) {
+      _updateImage(widget.image);
+    }
+  }
+
+  @override
   void dispose() {
     ref.watch(routeObserverProvider).unsubscribe(this);
     super.dispose();
@@ -68,9 +76,7 @@ class _BackgroundWrapperState extends ConsumerState<BackgroundWrapper>
 
   @override
   void didPush() {
-    Future.microtask(() {
-      ref.read(currentBackgroundImageProvider.state).state = widget.image;
-    });
+    _updateImage(widget.image);
   }
 
   @override
@@ -81,6 +87,10 @@ class _BackgroundWrapperState extends ConsumerState<BackgroundWrapper>
 
   @override
   void didPopNext() {
+    _updateImage(widget.image);
+  }
+
+  void _updateImage(ImageProvider? newImage) {
     Future.microtask(() {
       ref.read(currentBackgroundImageProvider.state).state = widget.image;
     });

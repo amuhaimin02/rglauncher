@@ -51,11 +51,19 @@ Future<Map<System, List<File>>> scanLibrariesFromStorage({
       }
     }
   }
-  for (final system in gameLists.keys) {
-    gameLists[system]!
-        .sort((a, b) => basename(a.path).compareTo(basename(b.path)));
+
+  final sortedGameLists = <System, List<File>>{};
+  for (final system in systems) {
+    if (gameLists[system] != null) {
+      // Sort systems based on position
+      sortedGameLists[system] = gameLists[system]!;
+
+      // Sort games based on name
+      sortedGameLists[system]!
+          .sort((a, b) => basename(a.path).compareTo(basename(b.path)));
+    }
   }
-  return gameLists;
+  return sortedGameLists;
 }
 
 Future<Map<System, List<File>>> scanLibrariesFromStorageCompute(

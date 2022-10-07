@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rglauncher/data/providers.dart';
 import 'package:rglauncher/screens/game_list_screen.dart';
 import 'package:rglauncher/utils/range_limiting.dart';
+import 'package:rglauncher/widgets/cached_image.dart';
 import 'package:rglauncher/widgets/loading_widget.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
@@ -12,7 +13,6 @@ import '../utils/navigate.dart';
 import '../widgets/command.dart';
 import '../widgets/gamepad_listener.dart';
 import '../widgets/launcher_scaffold.dart';
-import '../widgets/sliding_transition_page_route.dart';
 
 class SystemListScreen extends ConsumerWidget {
   const SystemListScreen({Key? key}) : super(key: key);
@@ -61,10 +61,9 @@ class SystemListScreen extends ConsumerWidget {
   }
 
   void _openGameListScreen(BuildContext context) {
-
-      Navigate.to(
-            (context) => const GameListScreen(),
-        direction: Axis.vertical,
+    Navigate.to(
+      (context) => const GameListScreen(),
+      direction: Axis.vertical,
     );
   }
 }
@@ -123,27 +122,24 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
                 controller: _pageController,
                 children: [
                   for (int i = 0; i < library.length; i++)
-                    InkWell(
-                      onTap: () => _openGameListScreen(context, i),
-                      child: AnimatedContainer(
-                        transform: currentSystemIndex == i
-                            ? Matrix4.identity()
-                            : (Matrix4.identity()..scale(0.75)),
-                        transformAlignment: Alignment.bottomCenter,
-                        // padding: currentSystemIndex == i
-                        //     ? EdgeInsets.zero
-                        //     : const EdgeInsets.all(16),
-                        duration: defaultAnimationDuration,
-                        curve: defaultAnimationCurve,
-                        alignment: Alignment.center,
-                        child: AspectRatio(
-                          aspectRatio: 1,
+                    AspectRatio(
+                      aspectRatio: 1,
+                      child: InkWell(
+                        onTap: () => _openGameListScreen(context, i),
+                        child: AnimatedContainer(
+                          transform: currentSystemIndex == i
+                              ? Matrix4.identity()
+                              : (Matrix4.identity()..scale(0.75)),
+                          transformAlignment: Alignment.bottomCenter,
+                          duration: defaultAnimationDuration,
+                          curve: defaultAnimationCurve,
+                          alignment: Alignment.center,
                           child: Material(
                             color: Colors.white,
                             clipBehavior: Clip.antiAlias,
                             borderRadius: BorderRadius.circular(16),
                             elevation: 4,
-                            child: Image.network(
+                            child: CachedImage(
                               systemList[i].imageLink,
                             ),
                           ),
@@ -166,9 +162,9 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
   void _openGameListScreen(BuildContext context, int index) {
     ref.read(selectedSystemIndexProvider.state).state = index;
 
-      Navigate.to( (context) => const GameListScreen(),
-        direction: Axis.vertical,
-
+    Navigate.to(
+      (context) => const GameListScreen(),
+      direction: Axis.vertical,
     );
   }
 }

@@ -3,10 +3,29 @@ import 'dart:io';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:android_intent_plus/flag.dart';
 import 'package:path/path.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:rglauncher/data/configs.dart';
+import 'package:rglauncher/data/globals.dart';
+import 'package:rglauncher/data/services.dart';
 import 'package:rglauncher/utils/android_functions.dart';
-
+import 'package:http/http.dart' as http;
 import 'models.dart';
+
+Future<void> downloadLinkAndSaveSystemImage(
+    {required List<System> systems}) async {
+  final basePath = services<Globals>().privateAppDirectory;
+  final imageStoragePath = Directory('${basePath.path}/$systemImageFolderName');
+  if (!imageStoragePath.existsSync()) {
+    imageStoragePath.create();
+  }
+
+  for (final system in systems) {
+    final imageLink = system.imageLink;
+    final response = await http.get(Uri.parse(imageLink));
+    final fileName = '${system.code}.png';
+    final imageFile = File('${imageStoragePath.path}/$fileName');
+    imageFile.writeAsBytesSync(response.bodyBytes);
+  }
+}
 
 Future<Map<System, List<File>>> scanLibrariesFromStorage({
   required List<System> systems,

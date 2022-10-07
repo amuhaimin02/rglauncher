@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:rglauncher/data/globals.dart';
 import 'package:rglauncher/data/providers.dart';
-import 'package:rglauncher/screens/home_screen.dart';
+import 'package:rglauncher/data/services.dart';
+import 'package:rglauncher/data/tasks.dart';
 import 'package:rglauncher/utils/config_loader.dart';
 import 'package:rglauncher/widgets/background.dart';
 
@@ -16,6 +18,8 @@ late Map<String, dynamic> emulatorsConfig;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeServices();
+  print(services<Globals>().privateAppDirectory);
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
   systemsConfig = await loadConfigFromAsset('config/systems.toml');
   emulatorsConfig = await loadConfigFromAsset('config/emulators.toml');
@@ -30,6 +34,10 @@ class MyApp extends StatelessWidget {
     return ProviderScope(
       child: Consumer(
         builder: (context, ref, child) {
+          Future.microtask(() {
+            downloadLinkAndSaveSystemImage(
+                systems: ref.watch(allSystemsProvider));
+          });
           return MaterialApp(
             title: 'RGLauncher',
             debugShowCheckedModeBanner: false,

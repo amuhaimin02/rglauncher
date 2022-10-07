@@ -25,6 +25,16 @@ class System {
       supportedExtensions: (map['extensions'] as List).cast<String>(),
     );
   }
+  @override
+  String toString() => 'System: $code';
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is System && runtimeType == other.runtimeType && code == other.code;
+
+  @override
+  int get hashCode => code.hashCode;
 }
 
 class Emulator {
@@ -52,6 +62,9 @@ class Emulator {
     );
   }
 
+  @override
+  String toString() => 'Emulator: $code';
+
   bool get isRetroarch => libretroPath != null;
 
   String get androidPackageName =>
@@ -59,6 +72,16 @@ class Emulator {
 
   String get androidComponentName =>
       executable.substring(executable.indexOf('/') + 1);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Emulator &&
+          runtimeType == other.runtimeType &&
+          code == other.code;
+
+  @override
+  int get hashCode => code.hashCode;
 }
 
 class GameEntry {

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/providers.dart';
+import '../utils/navigate.dart';
 
 class GamepadListener extends ConsumerStatefulWidget {
   const GamepadListener({
@@ -70,7 +71,7 @@ class _GamepadListenerState extends ConsumerState<GamepadListener>
   Widget build(BuildContext context) {
     void defaultBackAction() {
       if (ModalRoute.of(context)?.isFirst == false) {
-        Navigator.pop(context);
+        Navigate.back();
       }
     }
 

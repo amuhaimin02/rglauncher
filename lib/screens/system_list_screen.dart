@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rglauncher/data/providers.dart';
 import 'package:rglauncher/screens/game_list_screen.dart';
 import 'package:rglauncher/utils/range_limiting.dart';
+import 'package:rglauncher/widgets/loading_widget.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
 import '../data/configs.dart';
 import '../data/models.dart';
+import '../utils/navigate.dart';
 import '../widgets/command.dart';
 import '../widgets/gamepad_listener.dart';
+import '../widgets/launcher_scaffold.dart';
 import '../widgets/sliding_transition_page_route.dart';
 
 class SystemListScreen extends ConsumerWidget {
@@ -16,21 +19,21 @@ class SystemListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return CommandWrapper(
-      commands: [
-        Command(
-          button: CommandButton.a,
-          label: 'Open',
-          onTap: () => _openGameListScreen(context),
-        ),
-        Command(
-          button: CommandButton.b,
-          label: 'Back',
-          onTap: () => Navigator.pop(context),
-        ),
-      ],
-      child: Scaffold(
-        body: GamepadListener(
+    return LauncherScaffold(
+      body: CommandWrapper(
+        commands: [
+          Command(
+            button: CommandButton.a,
+            label: 'Open',
+            onTap: (context) => _openGameListScreen(context),
+          ),
+          Command(
+            button: CommandButton.b,
+            label: 'Back',
+            onTap: (context) => Navigate.back(),
+          ),
+        ],
+        child: GamepadListener(
           key: const ValueKey('system'),
           onDirectional: (direction, repeating) {
             int itemSize = ref.read(allSystemsProvider).length;
@@ -58,12 +61,10 @@ class SystemListScreen extends ConsumerWidget {
   }
 
   void _openGameListScreen(BuildContext context) {
-    Navigator.push(
-      context,
-      SlidingTransitionPageRoute(
-        builder: (context) => const GameListScreen(),
+
+      Navigate.to(
+            (context) => const GameListScreen(),
         direction: Axis.vertical,
-      ),
     );
   }
 }
@@ -105,7 +106,7 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
 
     return gameLibrary.when(
       error: (error, stack) => Text('$error\n$stack'),
-      loading: () => const CircularProgressIndicator(),
+      loading: () => const LoadingWidget(),
       data: (library) {
         return Column(
           children: [
@@ -164,12 +165,10 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
 
   void _openGameListScreen(BuildContext context, int index) {
     ref.read(selectedSystemIndexProvider.state).state = index;
-    Navigator.push(
-      context,
-      SlidingTransitionPageRoute(
-        builder: (context) => const GameListScreen(),
+
+      Navigate.to( (context) => const GameListScreen(),
         direction: Axis.vertical,
-      ),
+
     );
   }
 }

@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart';
 import 'package:rglauncher/data/tasks.dart';
+import 'package:rglauncher/widgets/launcher_scaffold.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
 import '../data/configs.dart';
 import '../data/providers.dart';
+import '../utils/navigate.dart';
 import '../widgets/command.dart';
 import '../widgets/custom_page_view.dart';
 import '../widgets/gamepad_listener.dart';
@@ -48,7 +50,7 @@ class _GameListScreenState extends ConsumerState<GameListScreen> {
       error: (error, stack) => Text('$error\n$stack'),
       loading: () => const CircularProgressIndicator(),
       data: (library) {
-        return Scaffold(
+        return LauncherScaffold(
           body: Stack(
             children: [
               const GameBackground(),
@@ -87,12 +89,12 @@ class SingleGameListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return CommandWrapper(
       commands: [
-        Command(button: CommandButton.x, label: 'Options', onTap: () {}),
-        Command(button: CommandButton.a, label: 'Open', onTap: () {}),
+        Command(button: CommandButton.x, label: 'Options', onTap: (context) {}),
+        Command(button: CommandButton.a, label: 'Open', onTap: (context) {}),
         Command(
           button: CommandButton.b,
           label: 'Back',
-          onTap: () => Navigator.pop(context),
+          onTap: (context) => Navigate.back(),
         ),
       ],
       child: GameListContent(
@@ -228,16 +230,16 @@ class _GameListViewState extends ConsumerState<GameListView> {
 
     return CommandWrapper(
       commands: [
-        Command(button: CommandButton.x, label: 'Options', onTap: () {}),
+        Command(button: CommandButton.x, label: 'Options', onTap: (context) {}),
         Command(
           button: CommandButton.a,
           label: 'Open',
-          onTap: () => _onItemSelected(context),
+          onTap: (context) => _onItemSelected(context),
         ),
         Command(
           button: CommandButton.b,
           label: 'Back',
-          onTap: () => Navigator.pop(context),
+          onTap: (context) => Navigate.back(),
         ),
       ],
       child: GamepadListener(

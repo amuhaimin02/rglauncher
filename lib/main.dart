@@ -8,6 +8,7 @@ import 'package:rglauncher/utils/config_loader.dart';
 import 'package:rglauncher/widgets/background.dart';
 
 import 'screens/splash_screen.dart';
+import 'utils/navigate.dart';
 import 'widgets/screen_overlay.dart';
 
 late Map<String, dynamic> systemsConfig;
@@ -32,6 +33,7 @@ class MyApp extends StatelessWidget {
           return MaterialApp(
             title: 'RGLauncher',
             debugShowCheckedModeBanner: false,
+            navigatorKey: Navigate.key,
             theme: ThemeData.dark().copyWith(
               textTheme:
                   GoogleFonts.barlowTextTheme(Typography.englishLike2021),
@@ -42,7 +44,6 @@ class MyApp extends StatelessWidget {
               ref.watch(routeObserverProvider),
             ],
             builder: (context, child) {
-              // Disable scrolling overglow animation
               return NotificationListener<OverscrollIndicatorNotification>(
                 onNotification: (OverscrollIndicatorNotification overScroll) {
                   overScroll.disallowIndicator();
@@ -54,7 +55,7 @@ class MyApp extends StatelessWidget {
                   child: Stack(
                     children: [
                       const Background(),
-                      child ?? const SizedBox(),
+                      child!,
                       const ScreenOverlay(),
                     ],
                   ),

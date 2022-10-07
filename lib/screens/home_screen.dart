@@ -6,9 +6,10 @@ import 'package:rglauncher/screens/system_list_screen.dart';
 import 'package:rglauncher/utils/extensions.dart';
 import 'package:rglauncher/widgets/command.dart';
 import 'package:rglauncher/widgets/gamepad_listener.dart';
-import 'package:rglauncher/widgets/sliding_transition_page_route.dart';
+import 'package:rglauncher/widgets/launcher_scaffold.dart';
 import 'package:rglauncher/widgets/two_line_grid_view.dart';
 
+import '../utils/navigate.dart';
 import '../widgets/large_clock.dart';
 import 'game_list_screen.dart';
 
@@ -17,7 +18,7 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return const LauncherScaffold(
       body: HomePage(),
     );
   }
@@ -43,7 +44,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           Command(
             button: CommandButton.a,
             label: 'Open',
-            onTap: () => _onButtonAPressed(context),
+            onTap: (context) => _onButtonAPressed(context),
           ),
         ],
         child: GamepadListener(
@@ -159,25 +160,19 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   void _openSystemListScreen(BuildContext context) {
-    Navigator.push(
-      context,
-      SlidingTransitionPageRoute(
-        builder: (context) => const SystemListScreen(),
-        direction: Axis.vertical,
-      ),
+    Navigate.to(
+      (context) => const SystemListScreen(),
+      direction: Axis.vertical,
     );
   }
 
   void _openSingleListScreen(BuildContext context, String title) {
-    Navigator.push(
-      context,
-      SlidingTransitionPageRoute(
-        builder: (context) => SingleGameListScreen(
-          title: title,
-          gameList: [],
-        ),
-        direction: Axis.vertical,
+    Navigate.to(
+      (context) => SingleGameListScreen(
+        title: title,
+        gameList: [],
       ),
+      direction: Axis.vertical,
     );
   }
 

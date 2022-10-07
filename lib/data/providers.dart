@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:battery_plus/battery_plus.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rglauncher/data/models.dart';
@@ -64,10 +65,9 @@ final selectedSystemProvider = StateProvider(
 );
 
 final gameLibraryProvider = FutureProvider((ref) async {
-  return await scanLibrariesFromStorage(
-    systems: ref.read(allSystemsProvider),
-    storagePaths: [
-      Directory('/sdcard/EmuROM'),
-    ],
-  );
+  final result = await compute(scanLibrariesFromStorageCompute, {
+    'systems': ref.read(allSystemsProvider),
+    'storagePaths': [Directory('/storage/emulated/0/EmuROM')]
+  });
+  return result;
 });

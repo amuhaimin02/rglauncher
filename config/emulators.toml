@@ -13,5 +13,5 @@ executable = "com.retroarch.aarch64/com.retroarch.browser.retroactivity.RetroAct
 [PPSSPP]
 name = 'PPSSPP'
 for = "PSP"
-executable = "org.ppsspp.ppsspp/.PpssppActivity"
+executable = "org.ppsspp.ppsspp/org.ppsspp.ppsspp.PpssppActivity"
 

@@ -4,6 +4,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart';
+import 'package:rglauncher/data/models.dart';
 import 'package:rglauncher/data/tasks.dart';
 import 'package:rglauncher/widgets/fading_edge.dart';
 import 'package:rglauncher/widgets/launcher_scaffold.dart';
@@ -69,7 +70,7 @@ class SingleGameListScreen extends StatelessWidget {
       : super(key: key);
 
   final String title;
-  final List<File> gameList;
+  final List<GameEntry> gameList;
 
   @override
   Widget build(BuildContext context) {
@@ -117,7 +118,7 @@ class GameListContent extends ConsumerStatefulWidget {
         super(key: key);
 
   final List<String> titles;
-  final List<List<File>> gameLists;
+  final List<List<GameEntry>> gameLists;
   final Function(int index)? onPageChanged;
   final bool paginated;
 
@@ -173,7 +174,7 @@ class _GameListContentState extends ConsumerState<GameListContent> {
                         ),
                         const SizedBox(width: 12),
                         SmallLabel(
-                          text: Text(widget.gameLists.length.toString()),
+                          text: Text(widget.gameLists[index].length.toString()),
                         )
                       ],
                     ),
@@ -227,14 +228,14 @@ class GameDetailPane extends ConsumerWidget {
                   if (game != null) {
                     return ImageWithStatus(
                       image: NetworkImage(
-                          'https://picsum.photos/640/480?gg=${game.path}'),
+                          'https://picsum.photos/640/480?gg=${game.name}'),
                     );
                   } else {
                     return Container(
                       width: 240,
                       height: 230,
                       alignment: Alignment.center,
-                      child: Text('No game'),
+                      child: const Text('No game'),
                     );
                   }
                 },
@@ -243,7 +244,7 @@ class GameDetailPane extends ConsumerWidget {
                     width: 240,
                     height: 230,
                     alignment: Alignment.center,
-                    child: Text('Error'),
+                    child: const Text('Error'),
                   );
                 },
                 loading: () => Container(
@@ -265,7 +266,7 @@ class GameListView extends ConsumerStatefulWidget {
     required this.gameList,
   }) : super(key: key);
 
-  final List<File> gameList;
+  final List<GameEntry> gameList;
 
   @override
   ConsumerState<GameListView> createState() => _GameListViewState();
@@ -377,7 +378,7 @@ class _GameListViewState extends ConsumerState<GameListView> {
                           alignment: AlignmentDirectional.centerStart,
                           height: gameListItemHeight,
                           child: Text(
-                            basename(widget.gameList[index].path),
+                            widget.gameList[index].name,
                             style: textTheme.bodyLarge!.copyWith(
                               color: index == _currentIndex
                                   ? Colors.black
@@ -433,16 +434,8 @@ class _GameListViewState extends ConsumerState<GameListView> {
 
   void _onItemSelected(BuildContext context) async {
     final game = widget.gameList[_currentIndex];
-    final system = await ref.read(selectedSystemProvider.future);
     final emulators = await ref.read(allEmulatorsProvider.future);
-    final emulator =
-        emulators.where((item) => item.forSystem == system.code).firstOrNull;
-    if (emulator != null) {
-      launchGameFromFile(game, emulator);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('No emulator found'),
-      ));
-    }
+    launchGameUsingEmulator(
+        game, emulators.firstWhere((e) => e.forSystem == game.system.code));
   }
 }

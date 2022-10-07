@@ -1,15 +1,13 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rglauncher/data/providers.dart';
 import 'package:rglauncher/data/services.dart';
 import 'package:rglauncher/screens/game_list_screen.dart';
+import 'package:rglauncher/utils/media_manager.dart';
 import 'package:rglauncher/widgets/loading_widget.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
 import '../data/configs.dart';
-import '../data/globals.dart';
 import '../data/models.dart';
 import '../utils/navigate.dart';
 import '../widgets/command.dart';
@@ -25,11 +23,11 @@ class SystemListScreen extends ConsumerWidget {
     return allSystems.when(
       loading: () => const LoadingWidget(),
       error: (error, stack) => Text(error.toString()),
-      data: (library) {
+      data: (systems) {
+        final system = systems[ref.watch(selectedSystemIndexProvider)];
         return LauncherScaffold(
-          backgroundImage: NetworkImage(
-            'https://picsum.photos/1280/720?s=${ref.watch(selectedSystemIndexProvider)}',
-          ),
+          backgroundImage:
+              FileImage(services<MediaManager>().getSystemImageFile(system)),
           body: CommandWrapper(
             commands: [
               Command(
@@ -74,7 +72,7 @@ class SystemListScreen extends ConsumerWidget {
 
   void _openGameListScreen(BuildContext context) {
     Navigate.to(
-      (context) => GameListScreen(),
+      (context) => const GameListScreen(),
       direction: Axis.vertical,
     );
   }
@@ -155,26 +153,23 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
   void _openGameListScreen(BuildContext context, int index) {
     ref.read(selectedSystemIndexProvider.state).state = index;
     Navigate.to(
-      (context) => GameListScreen(),
+      (context) => const GameListScreen(),
       direction: Axis.vertical,
     );
   }
 }
 
 class SystemItemTile extends StatelessWidget {
-  SystemItemTile({
+  const SystemItemTile({
     Key? key,
     required this.system,
     required this.onTap,
     this.selected = false,
-  })  : imagePath = File(
-            '${services<Globals>().privateAppDirectory.path}/$systemImageFolderName/${system.code}.png'),
-        super(key: key);
+  }) : super(key: key);
 
   final VoidCallback onTap;
   final System system;
   final bool selected;
-  final File imagePath;
 
   @override
   Widget build(BuildContext context) {
@@ -194,7 +189,8 @@ class SystemItemTile extends StatelessWidget {
           elevation: 4,
           child: InkWell(
             onTap: onTap,
-            child: Image.file(imagePath),
+            child:
+                Image.file(services<MediaManager>().getSystemImageFile(system)),
           ),
         ),
       ),

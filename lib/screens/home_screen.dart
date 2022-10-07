@@ -3,8 +3,11 @@ import 'dart:typed_data';
 import 'package:device_apps/device_apps.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:palette_generator/palette_generator.dart';
 import 'package:rglauncher/data/configs.dart';
 import 'package:rglauncher/data/providers.dart';
+import 'package:rglauncher/data/tasks.dart';
 import 'package:rglauncher/screens/system_list_screen.dart';
 import 'package:rglauncher/utils/extensions.dart';
 import 'package:rglauncher/widgets/command.dart';
@@ -12,6 +15,7 @@ import 'package:rglauncher/widgets/gamepad_listener.dart';
 import 'package:rglauncher/widgets/launcher_scaffold.dart';
 import 'package:rglauncher/widgets/two_line_grid_view.dart';
 
+import '../data/models.dart';
 import '../utils/navigate.dart';
 import '../widgets/large_clock.dart';
 import 'game_list_screen.dart';
@@ -41,6 +45,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     final allApps = ref.watch(installedAppsProvider);
+    final pinnedGames = ref.watch(pinnedGamesProvider);
 
     return WillPopScope(
       onWillPop: () async => false,
@@ -104,6 +109,38 @@ class _HomePageState extends ConsumerState<HomePage> {
                 child: LargeClock(),
               ),
               const TwoLineDivider(),
+              const TwoLineGridItem(
+                large: true,
+                aspectRatio: 0.6,
+                child: MenuTile(
+                  label: 'Continue',
+                  icon: Icons.play_circle_rounded,
+                  image: NetworkImage('https://picsum.photos/400/400'),
+                ),
+              ),
+              ...pinnedGames.when(
+                error: (error, stack) => [],
+                loading: () => [
+                  const TwoLineGridItem(child: LoadingTile()),
+                ],
+                data: (gamesList) {
+                  return [
+                    for (final game in gamesList)
+                      TwoLineGridItem(
+                        child: GameTile(game: game),
+                        onTap: () async {
+                          final emulator =
+                              await ref.read(allEmulatorsProvider.future);
+                          launchGameUsingEmulator(
+                            game,
+                            emulator.firstWhere(
+                                (e) => e.forSystem == game.system.code),
+                          );
+                        },
+                      )
+                  ];
+                },
+              ),
               const TwoLineGridItem(
                 child: AddMenuTile(),
               ),
@@ -172,6 +209,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   icon: Icons.apps_rounded,
                 ),
               ),
+              const TwoLineGridItem(child: AddMenuTile()),
             ],
           ),
         ),
@@ -236,19 +274,32 @@ class SelectionWrapper extends ConsumerWidget {
 }
 
 class MenuTile extends StatelessWidget {
-  const MenuTile({Key? key, required this.label, this.icon}) : super(key: key);
+  const MenuTile({Key? key, required this.label, this.icon, this.image})
+      : super(key: key);
 
   final String label;
   final IconData? icon;
+  final ImageProvider? image;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+
     return Material(
       borderRadius: BorderRadius.circular(16),
-      color: Colors.white38,
+      color: image != null ? Colors.black : Colors.white38,
       elevation: 2,
-      child: Padding(
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        decoration: image != null
+            ? BoxDecoration(
+                image: DecorationImage(
+                  image: image!,
+                  opacity: 0.6,
+                  fit: BoxFit.cover,
+                ),
+              )
+            : null,
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
         child: Stack(
           children: [
@@ -281,26 +332,34 @@ class AppTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    return Material(
-      borderRadius: BorderRadius.circular(16),
-      color: Colors.orange.shade200.withOpacity(0.54),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-        child: Stack(
-          children: [
-            Text(appName, style: textTheme.titleMedium),
-            Align(
-              alignment: Alignment.bottomRight,
-              child: Image.memory(
-                icon,
-                width: 60,
-                height: 60,
-              ),
+    final appIconImage = MemoryImage(icon);
+
+    return FutureBuilder<PaletteGenerator>(
+      future: PaletteGenerator.fromImageProvider(appIconImage),
+      builder: (context, snapshot) {
+        final palette = snapshot.data?.mutedColor;
+        return Material(
+          borderRadius: BorderRadius.circular(16),
+          color: palette?.color ?? Colors.white54,
+          elevation: 2,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+            child: Stack(
+              children: [
+                Text(appName, style: textTheme.titleMedium),
+                Align(
+                  alignment: Alignment.bottomRight,
+                  child: Image(
+                    image: appIconImage,
+                    width: 60,
+                    height: 60,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -342,6 +401,39 @@ class LoadingTile extends StatelessWidget {
         height: 36,
         child: CircularProgressIndicator(
           color: Colors.white54,
+        ),
+      ),
+    );
+  }
+}
+
+class GameTile extends StatelessWidget {
+  const GameTile({Key? key, required this.game}) : super(key: key);
+
+  final GameEntry game;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        image: DecorationImage(
+            image:
+                NetworkImage('https://picsum.photos/300/300?r=${game.name}')),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(width: 2, color: Colors.white38),
+      ),
+      child: const Align(
+        alignment: Alignment.bottomRight,
+        child: Material(
+          color: Colors.black,
+          borderRadius: BorderRadius.only(
+            bottomRight: Radius.circular(16),
+            topLeft: Radius.circular(16),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Icon(MdiIcons.pin, size: 20, color: Colors.white),
+          ),
         ),
       ),
     );

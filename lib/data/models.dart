@@ -87,9 +87,11 @@ class Emulator {
 class GameEntry {
   final String name;
   final String filepath;
+  final System system;
 
   const GameEntry({
     required this.name,
     required this.filepath,
+    required this.system,
   });
 }

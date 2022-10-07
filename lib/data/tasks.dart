@@ -4,36 +4,27 @@ import 'package:android_intent_plus/android_intent.dart';
 import 'package:android_intent_plus/flag.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
-import 'package:rglauncher/data/configs.dart';
-import 'package:rglauncher/data/globals.dart';
 import 'package:rglauncher/data/services.dart';
 import 'package:rglauncher/utils/android_functions.dart';
+import 'package:rglauncher/utils/media_manager.dart';
 
 import 'models.dart';
 
 Future<void> downloadLinkAndSaveSystemImage(
     {required List<System> systems}) async {
-  final basePath = services<Globals>().privateAppDirectory;
-  final imageStoragePath = Directory('${basePath.path}/$systemImageFolderName');
-  if (!imageStoragePath.existsSync()) {
-    imageStoragePath.create();
-  }
-
   for (final system in systems) {
     final imageLink = system.imageLink;
     final response = await http.get(Uri.parse(imageLink));
-    final fileName = '${system.code}.png';
-    final imageFile = File('${imageStoragePath.path}/$fileName');
-    imageFile.writeAsBytesSync(response.bodyBytes);
+    services<MediaManager>().saveSystemImageFile(response.bodyBytes, system);
   }
 }
 
-Future<Map<System, List<File>>> scanLibrariesFromStorage({
+Future<Map<System, List<GameEntry>>> scanLibrariesFromStorage({
   required List<System> systems,
   required List<Directory> storagePaths,
 }) async {
   // final status = await Permission.manageExternalStorage.request();
-  final gameLists = <System, List<File>>{};
+  final gameLists = <System, List<GameEntry>>{};
   final folderToSystemMap = {
     for (final system in systems)
       for (final folderName in system.folderNames) folderName: system
@@ -52,28 +43,27 @@ Future<Map<System, List<File>>> scanLibrariesFromStorage({
     }
   }
 
-  final sortedGameLists = <System, List<File>>{};
+  final sortedGameLists = <System, List<GameEntry>>{};
   for (final system in systems) {
     if (gameLists[system] != null) {
       // Sort systems based on position
       sortedGameLists[system] = gameLists[system]!;
 
       // Sort games based on name
-      sortedGameLists[system]!
-          .sort((a, b) => basename(a.path).compareTo(basename(b.path)));
+      sortedGameLists[system]!.sort((a, b) => a.name.compareTo(b.name));
     }
   }
   return sortedGameLists;
 }
 
-Future<Map<System, List<File>>> scanLibrariesFromStorageCompute(
+Future<Map<System, List<GameEntry>>> scanLibrariesFromStorageCompute(
         Map<String, dynamic> args) =>
     scanLibrariesFromStorage(
       systems: args['systems'],
       storagePaths: args['storagePaths'],
     );
 
-List<File> scanDirectoriesForGames(
+List<GameEntry> scanDirectoriesForGames(
   System system,
   Directory directory,
 ) {
@@ -86,10 +76,15 @@ List<File> scanDirectoriesForGames(
       .listSync(recursive: true)
       .whereType<File>()
       .where((file) => matcher.hasMatch(file.path))
+      .map((file) => GameEntry(
+            name: basename(file.path),
+            filepath: file.path,
+            system: system,
+          ))
       .toList();
 }
 
-Future<void> launchGameFromFile(File file, Emulator emulator) async {
+Future<void> launchGameUsingEmulator(GameEntry game, Emulator emulator) async {
   // final result = await AndroidFunctions.runShell(
   //     'am start -n org.ppsspp.ppsspp/.PpssppActivity');
   // print(result);
@@ -108,7 +103,7 @@ Future<void> launchGameFromFile(File file, Emulator emulator) async {
       ],
       arguments: emulator.isRetroarch
           ? {
-              'ROM': file.absolute.path,
+              'ROM': File(game.filepath).absolute.path,
               'LIBRETRO': emulator.libretroPath,
               'CONFIGFILE':
                   '/storage/emulated/0/Android/data/com.retroarch.aarch64/files/retroarch.cfg',
@@ -116,7 +111,8 @@ Future<void> launchGameFromFile(File file, Emulator emulator) async {
             }
           : null,
       data: !emulator.isRetroarch
-          ? await AndroidFunctions.convertUriToContentPath(file.path)
+          ? await AndroidFunctions.convertUriToContentPath(
+              File(game.filepath).path)
           : null,
     );
     await intent.launch();

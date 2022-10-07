@@ -94,3 +94,10 @@ final installedAppsProvider = FutureProvider((ref) async {
   appList.shuffle();
   return appList.take(6).cast<ApplicationWithIcon>();
 });
+
+final pinnedGamesProvider = FutureProvider<List<GameEntry>>((ref) async {
+  final library = await ref.watch(gameLibraryProvider.future);
+  final systems = await ref.watch(allSystemsProvider.future);
+  final gba = systems.firstWhere((s) => s.code == 'GBA');
+  return library[gba]?.take(4).toList() ?? <GameEntry>[];
+});

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart';
@@ -173,10 +174,10 @@ class GameDetailPane extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final textTheme = Theme.of(context).textTheme;
     final selectedGameIndex = ref.watch(selectedGameListIndexProvider);
     return Center(
       child: Container(
+        margin: const EdgeInsets.only(bottom: 32),
         padding: const EdgeInsets.all(32),
         width: 320,
         child: Column(
@@ -190,9 +191,6 @@ class GameDetailPane extends ConsumerWidget {
                 'https://picsum.photos/id/$selectedGameIndex/640/640',
               ),
             ),
-            const SizedBox(height: 8),
-            Text('Game $selectedGameIndex', style: textTheme.titleLarge),
-            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -388,6 +386,17 @@ class _GameListViewState extends ConsumerState<GameListView> {
 
   void _onItemSelected(BuildContext context) async {
     final game = widget.gameList[_currentIndex];
-    launchGameFromFile(game);
+    final system = ref.read(selectedSystemProvider);
+    final emulator = ref
+        .read(allEmulatorsProvider)
+        .where((item) => item.forSystem == system.code)
+        .firstOrNull;
+    if (emulator != null) {
+      launchGameFromFile(game, emulator);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('No emulator found'),
+      ));
+    }
   }
 }

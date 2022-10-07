@@ -4,14 +4,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:rglauncher/data/providers.dart';
 import 'package:rglauncher/screens/home_screen.dart';
+import 'package:rglauncher/utils/config_loader.dart';
 import 'package:rglauncher/widgets/background.dart';
 
 import 'screens/splash_screen.dart';
 import 'widgets/screen_overlay.dart';
 
-void main() {
+late Map<String, dynamic> systemsConfig;
+late Map<String, dynamic> emulatorsConfig;
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
+  systemsConfig = await loadConfigFromAsset('config/systems.toml');
+  emulatorsConfig = await loadConfigFromAsset('config/emulators.toml');
   runApp(const MyApp());
 }
 

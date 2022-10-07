@@ -44,6 +44,7 @@ dependencies:
   permission_handler: ^10.1.0
   external_path: ^1.0.3
   path: ^1.8.2
+  toml: ^0.13.1
 
 
 
@@ -73,6 +74,8 @@ flutter:
   # assets:
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
+  assets:
+    - config/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

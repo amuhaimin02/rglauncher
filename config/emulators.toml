@@ -1,0 +1,17 @@
+[RA64-mGBA]
+name = 'Retroarch 64 | mGBA'
+for = "GBA"
+libretro = "data/data/com.retroarch.aarch64/cores/mgba_libretro_android.so"
+executable = "com.retroarch.aarch64/com.retroarch.browser.retroactivity.RetroActivityFuture"
+
+[RA64-Gambatte]
+name = 'Retroarch 64 | Gambatte'
+for = "GB"
+libretro = "data/data/com.retroarch.aarch64/cores/gambatte_libretro_android.so"
+executable = "com.retroarch.aarch64/com.retroarch.browser.retroactivity.RetroActivityFuture"
+
+[PPSSPP]
+name = 'PPSSPP'
+for = "PSP"
+executable = "org.ppsspp.ppsspp/.PpssppActivity"
+

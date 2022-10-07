@@ -27,7 +27,7 @@ Future<Map<System, List<File>>> scanLibrariesFromStorage({
           if (gameLists[system] == null) {
             gameLists[system] = [];
           }
-          gameLists[system]!.addAll(scanDirecstoriesForGames(system, folder));
+          gameLists[system]!.addAll(scanDirectoriesForGames(system, folder));
         }
       }
     }
@@ -41,17 +41,14 @@ Future<Map<System, List<File>>> scanLibrariesFromStorage({
   }
 }
 
-List<File> scanDirecstoriesForGames(
+List<File> scanDirectoriesForGames(
   System system,
   Directory directory,
 ) {
-  final lowercaseExtensions = system.supportedExtensions;
-  final uppercaseExtensions =
-      system.supportedExtensions.map((e) => e.toUpperCase());
-  final allExtensions =
-      List.from([...lowercaseExtensions, ...uppercaseExtensions]);
-
-  final matcher = RegExp('(${allExtensions.join('|')})\$');
+  final matcher = RegExp(
+    '(${system.supportedExtensions.join('|')})\$',
+    caseSensitive: false,
+  );
 
   return directory
       .listSync(recursive: true)
@@ -60,25 +57,29 @@ List<File> scanDirecstoriesForGames(
       .toList();
 }
 
-Future<void> launchGameFromFile(File file) async {
+Future<void> launchGameFromFile(File file, Emulator emulator) async {
+  print(emulator.androidComponentName);
+  print(emulator.androidPackageName);
   if (Platform.isAndroid) {
     final intent = AndroidIntent(
-      action: 'action_main',
-      package: 'com.retroarch.aarch64',
-      componentName: 'com.retroarch.browser.retroactivity.RetroActivityFuture',
+      action: emulator.isRetroarch ? 'action_main' : 'action_view',
+      package: emulator.androidPackageName,
+      componentName: emulator.androidComponentName,
       flags: [
         Flag.FLAG_ACTIVITY_CLEAR_TASK,
         Flag.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED,
         Flag.FLAG_ACTIVITY_NO_HISTORY,
       ],
-      arguments: {
-        'ROM': file.absolute.path,
-        'LIBRETRO':
-            '/data/data/com.retroarch.aarch64/cores/mgba_libretro_android.so',
-        'CONFIGFILE':
-            '/storage/emulated/0/Android/data/com.retroarch.aarch64/files/retroarch.cfg',
-        'QUITFOCUS': ''
-      },
+      arguments: emulator.isRetroarch
+          ? {
+              'ROM': file.absolute.path,
+              'LIBRETRO': emulator.libretroPath,
+              'CONFIGFILE':
+                  '/storage/emulated/0/Android/data/com.retroarch.aarch64/files/retroarch.cfg',
+              'QUITFOCUS': ''
+            }
+          : null,
+      // data: !emulator.isRetroarch ? file.uri.toString() : null,
     );
     await intent.launch();
   }

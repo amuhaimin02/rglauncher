@@ -197,8 +197,16 @@ class GameSystemDetail extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(system.producer, style: textTheme.titleMedium),
-                Text(system.name, style: textTheme.headlineMedium),
+                Text(
+                  system.producer,
+                  style: textTheme.titleMedium,
+                  textAlign: TextAlign.end,
+                ),
+                Text(
+                  system.name,
+                  style: textTheme.headlineMedium,
+                  textAlign: TextAlign.end,
+                ),
                 // const SizedBox(height: 8),
               ],
             ),

@@ -81,6 +81,10 @@ List<File> scanDirectoriesForGames(
 }
 
 Future<void> launchGameFromFile(File file, Emulator emulator) async {
+  // final result = await AndroidFunctions.runShell(
+  //     'am start -n org.ppsspp.ppsspp/.PpssppActivity');
+  // print(result);
+  // return;
   if (Platform.isAndroid) {
     final intent = AndroidIntent(
       action: emulator.isRetroarch ? 'action_main' : 'action_view',

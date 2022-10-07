@@ -1,13 +1,16 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rglauncher/data/providers.dart';
+import 'package:rglauncher/data/services.dart';
 import 'package:rglauncher/screens/game_list_screen.dart';
 import 'package:rglauncher/utils/range_limiting.dart';
-import 'package:rglauncher/widgets/cached_image.dart';
 import 'package:rglauncher/widgets/loading_widget.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
 import '../data/configs.dart';
+import '../data/globals.dart';
 import '../data/models.dart';
 import '../utils/navigate.dart';
 import '../widgets/command.dart';
@@ -122,29 +125,10 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
                 controller: _pageController,
                 children: [
                   for (int i = 0; i < library.length; i++)
-                    AspectRatio(
-                      aspectRatio: 1,
-                      child: InkWell(
-                        onTap: () => _openGameListScreen(context, i),
-                        child: AnimatedContainer(
-                          transform: currentSystemIndex == i
-                              ? Matrix4.identity()
-                              : (Matrix4.identity()..scale(0.75)),
-                          transformAlignment: Alignment.bottomCenter,
-                          duration: defaultAnimationDuration,
-                          curve: defaultAnimationCurve,
-                          alignment: Alignment.center,
-                          child: Material(
-                            color: Colors.white,
-                            clipBehavior: Clip.antiAlias,
-                            borderRadius: BorderRadius.circular(16),
-                            elevation: 4,
-                            child: CachedImage(
-                              systemList[i].imageLink,
-                            ),
-                          ),
-                        ),
-                      ),
+                    SystemItemTile(
+                      selected: currentSystemIndex == i,
+                      onTap: () => _openGameListScreen(context, i),
+                      system: systemList[i],
                     ),
                 ],
                 onPageChanged: (index) {
@@ -165,6 +149,47 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
     Navigate.to(
       (context) => const GameListScreen(),
       direction: Axis.vertical,
+    );
+  }
+}
+
+class SystemItemTile extends StatelessWidget {
+  SystemItemTile({
+    Key? key,
+    required this.system,
+    required this.onTap,
+    this.selected = false,
+  })  : imagePath = File(
+            '${services<Globals>().privateAppDirectory.path}/$systemImageFolderName/${system.code}.png'),
+        super(key: key);
+
+  final VoidCallback onTap;
+  final System system;
+  final bool selected;
+  final File imagePath;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      transform:
+          selected ? Matrix4.identity() : (Matrix4.identity()..scale(0.75)),
+      transformAlignment: Alignment.bottomCenter,
+      duration: defaultAnimationDuration,
+      curve: defaultAnimationCurve,
+      alignment: Alignment.center,
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: Material(
+          color: Colors.white,
+          clipBehavior: Clip.antiAlias,
+          borderRadius: BorderRadius.circular(16),
+          elevation: 4,
+          child: InkWell(
+            onTap: onTap,
+            child: Image.file(imagePath),
+          ),
+        ),
+      ),
     );
   }
 }

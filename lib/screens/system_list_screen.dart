@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rglauncher/data/providers.dart';
 import 'package:rglauncher/data/services.dart';
 import 'package:rglauncher/screens/game_list_screen.dart';
-import 'package:rglauncher/utils/range_limiting.dart';
+import 'package:rglauncher/widgets/changeable_background.dart';
 import 'package:rglauncher/widgets/loading_widget.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
@@ -22,7 +22,9 @@ class SystemListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final allSystems = ref.watch(allSystemsProvider);
     return LauncherScaffold(
+      backgroundImage: const NetworkImage('https://picsum.photos/1280/720'),
       body: CommandWrapper(
         commands: [
           Command(
@@ -39,25 +41,29 @@ class SystemListScreen extends ConsumerWidget {
         child: GamepadListener(
           key: const ValueKey('system'),
           onDirectional: (direction, repeating) {
-            int itemSize = ref.read(allSystemsProvider).length;
-            if (direction == GamepadDirection.left) {
-              rangeLimit(
-                value: ref.read(selectedSystemIndexProvider) - 1,
-                max: itemSize,
-                ifInRange: () =>
-                    ref.read(selectedSystemIndexProvider.state).state--,
-              );
-            } else if (direction == GamepadDirection.right) {
-              rangeLimit(
-                value: ref.read(selectedSystemIndexProvider) + 1,
-                max: itemSize,
-                ifInRange: () =>
-                    ref.read(selectedSystemIndexProvider.state).state++,
-              );
-            }
+            // int itemSize = ref.read(allSystemsProvider).length;
+            // if (direction == GamepadDirection.left) {
+            //   rangeLimit(
+            //     value: ref.read(selectedSystemIndexProvider) - 1,
+            //     max: itemSize,
+            //     ifInRange: () =>
+            //         ref.read(selectedSystemIndexProvider.state).state--,
+            //   );
+            // } else if (direction == GamepadDirection.right) {
+            //   rangeLimit(
+            //     value: ref.read(selectedSystemIndexProvider) + 1,
+            //     max: itemSize,
+            //     ifInRange: () =>
+            //         ref.read(selectedSystemIndexProvider.state).state++,
+            //   );
+            // }
           },
           onA: () => _openGameListScreen(context),
-          child: const SystemPageView(),
+          child: allSystems.when(
+            loading: () => const LoadingWidget(),
+            error: (error, stack) => Text(error.toString()),
+            data: (systems) => SystemPageView(),
+          ),
         ),
       ),
     );
@@ -94,7 +100,6 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
 
   @override
   Widget build(BuildContext context) {
-    final systemList = ref.watch(allSystemsProvider);
     final currentSystemIndex = ref.watch(selectedSystemIndexProvider);
     final gameLibrary = ref.watch(gameLibraryProvider);
 
@@ -110,13 +115,14 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
       error: (error, stack) => Text('$error\n$stack'),
       loading: () => const LoadingWidget(),
       data: (library) {
+        final systems = library.keys.toList();
         return Column(
           children: [
             Expanded(
               flex: 6,
               child: GameSystemDetail(
-                system: systemList[currentSystemIndex],
-                totalGames: library[systemList[currentSystemIndex]]?.length,
+                system: systems[currentSystemIndex],
+                totalGames: library[systems[currentSystemIndex]]?.length,
               ),
             ),
             Expanded(
@@ -128,7 +134,7 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
                     SystemItemTile(
                       selected: currentSystemIndex == i,
                       onTap: () => _openGameListScreen(context, i),
-                      system: systemList[i],
+                      system: systems[i],
                     ),
                 ],
                 onPageChanged: (index) {
@@ -145,7 +151,6 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
 
   void _openGameListScreen(BuildContext context, int index) {
     ref.read(selectedSystemIndexProvider.state).state = index;
-
     Navigate.to(
       (context) => const GameListScreen(),
       direction: Axis.vertical,

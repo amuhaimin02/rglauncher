@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-class Background extends StatefulWidget {
-  const Background({Key? key}) : super(key: key);
+class HueBackground extends StatefulWidget {
+  const HueBackground({Key? key}) : super(key: key);
 
   @override
-  State<Background> createState() => _BackgroundState();
+  State<HueBackground> createState() => _HueBackgroundState();
 }
 
-class _BackgroundState extends State<Background>
+class _HueBackgroundState extends State<HueBackground>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 

@@ -2,12 +2,13 @@ import 'dart:io';
 
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:android_intent_plus/flag.dart';
+import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
 import 'package:rglauncher/data/configs.dart';
 import 'package:rglauncher/data/globals.dart';
 import 'package:rglauncher/data/services.dart';
 import 'package:rglauncher/utils/android_functions.dart';
-import 'package:http/http.dart' as http;
+
 import 'models.dart';
 
 Future<void> downloadLinkAndSaveSystemImage(

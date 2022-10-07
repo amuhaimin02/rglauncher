@@ -35,8 +35,6 @@ class _GameListScreenState extends ConsumerState<GameListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final allSystems = ref.watch(allSystemsProvider);
-
     ref.listen(selectedSystemIndexProvider, (prevIndex, newIndex) {
       _pageController.animateToPage(
         newIndex,
@@ -46,30 +44,29 @@ class _GameListScreenState extends ConsumerState<GameListScreen> {
     });
 
     final gameLibrary = ref.watch(gameLibraryProvider);
+
     return gameLibrary.when(
       error: (error, stack) => Text('$error\n$stack'),
       loading: () => const CircularProgressIndicator(),
       data: (library) {
+        final systems = library.keys.toList();
         return LauncherScaffold(
-          body: Stack(
-            children: [
-              const GameBackground(),
-              CustomPageView.builder(
-                controller: _pageController,
-                itemCount: allSystems.length,
-                itemBuilder: (context, index) {
-                  final system = allSystems[index];
-                  return GameListContent(
-                    title: system.name,
-                    gameList: library[system]!,
-                  );
-                },
-                onPageChanged: (newIndex) {
-                  ref.read(selectedSystemIndexProvider.state).state = newIndex;
-                  ref.read(selectedGameListIndexProvider.state).state = 0;
-                },
-              ),
-            ],
+          backgroundImage:
+              const NetworkImage('https://picsum.photos/1280/720?r=1'),
+          body: PageView.builder(
+            controller: _pageController,
+            itemCount: systems.length,
+            itemBuilder: (context, index) {
+              final system = systems[index];
+              return GameListContent(
+                title: system.name,
+                gameList: library[system]!,
+              );
+            },
+            onPageChanged: (newIndex) {
+              ref.read(selectedSystemIndexProvider.state).state = newIndex;
+              ref.read(selectedGameListIndexProvider.state).state = 0;
+            },
           ),
         );
       },
@@ -105,21 +102,21 @@ class SingleGameListScreen extends StatelessWidget {
   }
 }
 
-class GameBackground extends ConsumerWidget {
-  const GameBackground({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final selectedGameIndex = ref.watch(selectedGameListIndexProvider);
-    return Image.network(
-      'https://picsum.photos/id/$selectedGameIndex/1280/720',
-      fit: BoxFit.cover,
-      width: MediaQuery.of(context).size.width,
-      height: MediaQuery.of(context).size.height,
-      opacity: const AlwaysStoppedAnimation(0.2),
-    );
-  }
-}
+// class GameBackground extends ConsumerWidget {
+//   const GameBackground({Key? key}) : super(key: key);
+//
+//   @override
+//   Widget build(BuildContext context, WidgetRef ref) {
+//     final selectedGameIndex = ref.watch(selectedGameListIndexProvider);
+//     return Image.network(
+//       'https://picsum.photos/id/$selectedGameIndex/1280/720',
+//       fit: BoxFit.cover,
+//       width: MediaQuery.of(context).size.width,
+//       height: MediaQuery.of(context).size.height,
+//       opacity: const AlwaysStoppedAnimation(0.2),
+//     );
+//   }
+// }
 
 class GameListContent extends ConsumerWidget {
   const GameListContent({Key? key, required this.title, required this.gameList})
@@ -388,11 +385,10 @@ class _GameListViewState extends ConsumerState<GameListView> {
 
   void _onItemSelected(BuildContext context) async {
     final game = widget.gameList[_currentIndex];
-    final system = ref.read(selectedSystemProvider);
-    final emulator = ref
-        .read(allEmulatorsProvider)
-        .where((item) => item.forSystem == system.code)
-        .firstOrNull;
+    final system = await ref.read(selectedSystemProvider.future);
+    final emulators = await ref.read(allEmulatorsProvider.future);
+    final emulator =
+        emulators.where((item) => item.forSystem == system.code).firstOrNull;
     if (emulator != null) {
       launchGameFromFile(game, emulator);
     } else {

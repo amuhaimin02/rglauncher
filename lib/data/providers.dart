@@ -10,6 +10,7 @@ import 'package:rglauncher/data/tasks.dart';
 import 'package:rglauncher/main.dart';
 import 'package:rglauncher/utils/extensions.dart';
 
+import '../utils/config_loader.dart';
 import '../widgets/command.dart';
 
 final routeObserverProvider = Provider((ref) => RouteObserver<PageRoute>());
@@ -37,17 +38,19 @@ final connectivityStateProvider =
 
 final commandProvider = StateProvider<List<Command>>((ref) => []);
 
-final allSystemsProvider = Provider(
-  (ref) {
-    return systemsConfig.entries
+final allSystemsProvider = FutureProvider(
+  (ref) async {
+    final data = await loadConfigFromAsset('config/systems.toml');
+    return data.entries
         .map((e) => System.fromMap({...e.value, 'code': e.key}))
         .toList();
   },
 );
 
-final allEmulatorsProvider = Provider(
-  (ref) {
-    return emulatorsConfig.entries
+final allEmulatorsProvider = FutureProvider(
+  (ref) async {
+    final data = await loadConfigFromAsset('config/emulators.toml');
+    return data.entries
         .map((e) => Emulator.fromMap({...e.value, 'code': e.key}))
         .toList();
   },
@@ -59,15 +62,18 @@ final selectedMenuIndexProvider = StateProvider((ref) => 0);
 
 final selectedGameListIndexProvider = StateProvider((ref) => 0);
 
-final selectedSystemProvider = StateProvider(
-  (ref) =>
-      ref.watch(allSystemsProvider)[ref.watch(selectedSystemIndexProvider)],
-);
+final selectedSystemProvider = FutureProvider((ref) async {
+  final systems = await ref.watch(allSystemsProvider.future);
+  return systems[ref.watch(selectedSystemIndexProvider)];
+});
 
 final gameLibraryProvider = FutureProvider((ref) async {
   final result = await compute(scanLibrariesFromStorageCompute, {
-    'systems': ref.read(allSystemsProvider),
+    'systems': await ref.read(allSystemsProvider.future),
     'storagePaths': [Directory('/storage/emulated/0/EmuROM')]
   });
   return result;
 });
+
+final currentBackgroundImageProvider =
+    StateProvider<ImageProvider?>((ref) => null);

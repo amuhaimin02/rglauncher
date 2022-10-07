@@ -74,7 +74,7 @@ class SystemListScreen extends ConsumerWidget {
 
   void _openGameListScreen(BuildContext context) {
     Navigate.to(
-      (context) => const GameListScreen(),
+      (context) => GameListScreen(),
       direction: Axis.vertical,
     );
   }
@@ -155,7 +155,7 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
   void _openGameListScreen(BuildContext context, int index) {
     ref.read(selectedSystemIndexProvider.state).state = index;
     Navigate.to(
-      (context) => const GameListScreen(),
+      (context) => GameListScreen(),
       direction: Axis.vertical,
     );
   }

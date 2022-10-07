@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart';
 import 'package:rglauncher/data/tasks.dart';
+import 'package:rglauncher/widgets/fading_edge.dart';
 import 'package:rglauncher/widgets/launcher_scaffold.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
@@ -15,34 +16,11 @@ import '../widgets/command.dart';
 import '../widgets/gamepad_listener.dart';
 import '../widgets/image_with_status.dart';
 
-class GameListScreen extends ConsumerStatefulWidget {
+class GameListScreen extends ConsumerWidget {
   const GameListScreen({super.key});
 
   @override
-  ConsumerState<GameListScreen> createState() => _GameListScreenState();
-}
-
-class _GameListScreenState extends ConsumerState<GameListScreen> {
-  late final PageController _pageController = PageController(
-    initialPage: ref.watch(selectedSystemIndexProvider),
-  );
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    ref.listen(selectedSystemIndexProvider, (prevIndex, newIndex) {
-      _pageController.animateToPage(
-        newIndex,
-        duration: defaultAnimationDuration,
-        curve: defaultAnimationCurve,
-      );
-    });
-
+  Widget build(BuildContext context, WidgetRef ref) {
     final gameLibrary = ref.watch(gameLibraryProvider);
 
     return gameLibrary.when(
@@ -54,19 +32,29 @@ class _GameListScreenState extends ConsumerState<GameListScreen> {
           backgroundImage: NetworkImage(
             'https://picsum.photos/1280/720?g=${ref.watch(selectedGameListIndexProvider)}',
           ),
-          body: PageView.builder(
-            controller: _pageController,
-            itemCount: systems.length,
-            itemBuilder: (context, index) {
-              final system = systems[index];
-              return GameListContent(
-                title: system.name,
-                gameList: library[system]!,
-              );
-            },
+          // body: PageView.builder(
+          //   controller: _pageController,
+          //   itemCount: systems.length,
+          //   itemBuilder: (context, index) {
+          //     final system = systems[index];
+          //     return GameListContent(
+          //       titles: system.name,
+          //       gameLists: library[system]!,
+          //     );
+          //   },
+          //   onPageChanged: (newIndex) {
+          //     ref.read(selectedSystemIndexProvider.state).state = newIndex;
+          //     ref.read(selectedGameListIndexProvider.state).state = 0;
+          //   },
+          // ),
+          body: GameListContent(
+            titles: systems.map((e) => e.name).toList(),
+            gameLists: library.values.toList(),
             onPageChanged: (newIndex) {
-              ref.read(selectedSystemIndexProvider.state).state = newIndex;
-              ref.read(selectedGameListIndexProvider.state).state = 0;
+              Future.microtask(() {
+                ref.read(selectedSystemIndexProvider.state).state = newIndex;
+                ref.read(selectedGameListIndexProvider.state).state = 0;
+              });
             },
           ),
         );
@@ -96,8 +84,8 @@ class SingleGameListScreen extends StatelessWidget {
         ),
       ],
       child: GameListContent(
-        title: title,
-        gameList: gameList,
+        titles: [title],
+        gameLists: [gameList],
       ),
     );
   }
@@ -119,48 +107,91 @@ class SingleGameListScreen extends StatelessWidget {
 //   }
 // }
 
-class GameListContent extends ConsumerWidget {
-  const GameListContent({Key? key, required this.title, required this.gameList})
-      : super(key: key);
+class GameListContent extends ConsumerStatefulWidget {
+  const GameListContent({
+    Key? key,
+    required this.titles,
+    required this.gameLists,
+    this.onPageChanged,
+  })  : paginated = titles.length > 1,
+        super(key: key);
 
-  final String title;
-  final List<File> gameList;
+  final List<String> titles;
+  final List<List<File>> gameLists;
+  final Function(int index)? onPageChanged;
+  final bool paginated;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GameListContent> createState() => _GameListContentState();
+}
+
+class _GameListContentState extends ConsumerState<GameListContent> {
+  late final PageController _pageController = PageController(
+    initialPage: ref.watch(selectedSystemIndexProvider),
+  );
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.paginated) {
+      ref.listen(selectedSystemIndexProvider, (prevIndex, newIndex) {
+        _pageController.animateToPage(
+          newIndex,
+          duration: defaultAnimationDuration,
+          curve: defaultAnimationCurve,
+        );
+      });
+    }
+
     final textTheme = Theme.of(context).textTheme;
-    return Column(
+    return Row(
       children: [
-        Padding(
-          padding:
-              const EdgeInsets.all(20.0) - const EdgeInsets.only(bottom: 20),
-          child: Row(
-            children: [
-              Text(
-                title,
-                style: textTheme.headlineSmall!
-                    .copyWith(fontWeight: FontWeight.bold),
+        Expanded(
+          flex: 6,
+          child: FadingEdge(
+            direction: Axis.horizontal,
+            fadingEdgeSize: 8,
+            child: PageView.builder(
+              controller: widget.paginated ? _pageController : null,
+              itemCount: widget.titles.length,
+              itemBuilder: (context, index) => Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(20.0) -
+                        const EdgeInsets.only(bottom: 20),
+                    child: Row(
+                      children: [
+                        Text(
+                          widget.titles[index],
+                          style: textTheme.headlineSmall!
+                              .copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(width: 12),
+                        SmallLabel(
+                          text: Text(widget.gameLists.length.toString()),
+                        )
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: GameListView(
+                      gameList: widget.gameLists[index],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              SmallLabel(
-                text: Text(gameList.length.toString()),
-              )
-            ],
+              onPageChanged: widget.onPageChanged,
+            ),
           ),
         ),
-        Expanded(
-          child: Row(
-            children: [
-              Expanded(
-                child: GameListView(
-                  gameList: gameList,
-                ),
-              ),
-              const Expanded(
-                child: GameDetailPane(),
-              ),
-            ],
-          ),
+        const Expanded(
+          flex: 5,
+          child: GameDetailPane(),
         ),
       ],
     );
@@ -176,37 +207,50 @@ class GameDetailPane extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedGame = ref.watch(selectedGameProvider);
     return Center(
-      child: AnimatedContainer(
-        duration: defaultAnimationDuration,
-        curve: defaultAnimationCurve,
-        margin: const EdgeInsets.only(bottom: 32),
+      child: Container(
         padding: const EdgeInsets.all(32),
-        child: Material(
-          elevation: 4,
-          borderRadius: BorderRadius.circular(16),
-          clipBehavior: Clip.antiAlias,
-          color: Colors.grey.shade800,
-          child: selectedGame.when(
-            data: (game) {
-              if (game != null) {
-                return ImageWithStatus(
-                  image: NetworkImage(
-                      'https://picsum.photos/640/640?gg=${game.path}'),
-                );
-              } else {
-                return const Center(
-                  child: Text('No game'),
-                );
-              }
-            },
-            error: (error, stack) {
-              return const Center(
-                child: Text('Error'),
-              );
-            },
-            loading: () => const SizedBox(
-              width: 120,
-              height: 120,
+        child: AnimatedSize(
+          duration: defaultAnimationDuration,
+          curve: defaultAnimationCurve,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              minWidth: 240,
+              minHeight: 240,
+            ),
+            child: Material(
+              elevation: 4,
+              borderRadius: BorderRadius.circular(16),
+              clipBehavior: Clip.antiAlias,
+              color: Colors.grey.shade800,
+              child: selectedGame.when(
+                data: (game) {
+                  if (game != null) {
+                    return ImageWithStatus(
+                      image: NetworkImage(
+                          'https://picsum.photos/640/480?gg=${game.path}'),
+                    );
+                  } else {
+                    return Container(
+                      width: 240,
+                      height: 230,
+                      alignment: Alignment.center,
+                      child: Text('No game'),
+                    );
+                  }
+                },
+                error: (error, stack) {
+                  return Container(
+                    width: 240,
+                    height: 230,
+                    alignment: Alignment.center,
+                    child: Text('Error'),
+                  );
+                },
+                loading: () => Container(
+                  width: 120,
+                  height: 120,
+                ),
+              ),
             ),
           ),
         ),
@@ -312,23 +356,9 @@ class _GameListViewState extends ConsumerState<GameListView> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final widgetHeight = constraints.maxHeight;
-              return ShaderMask(
-                shaderCallback: (rect) {
-                  return const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black,
-                      Colors.black,
-                      Colors.transparent
-                    ],
-                    stops: [0, 0.2, 0.8, 1],
-                  ).createShader(
-                    Rect.fromLTRB(0, 0, rect.width, rect.height),
-                  );
-                },
-                blendMode: BlendMode.dstIn,
+              return FadingEdge(
+                direction: Axis.vertical,
+                fadingEdgeSize: 100,
                 child: ListView.builder(
                   padding: const EdgeInsets.all(12.0) +
                       EdgeInsets.symmetric(vertical: widgetHeight / 2.5),

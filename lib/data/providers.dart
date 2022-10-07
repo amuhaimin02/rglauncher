@@ -2,12 +2,12 @@ import 'dart:io';
 
 import 'package:battery_plus/battery_plus.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:device_apps/device_apps.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rglauncher/data/models.dart';
 import 'package:rglauncher/data/tasks.dart';
-import 'package:rglauncher/main.dart';
 import 'package:rglauncher/utils/extensions.dart';
 
 import '../utils/config_loader.dart';
@@ -84,3 +84,13 @@ final gameLibraryProvider = FutureProvider((ref) async {
 
 final currentBackgroundImageProvider =
     StateProvider<ImageProvider?>((ref) => null);
+
+final installedAppsProvider = FutureProvider((ref) async {
+  final appList = await DeviceApps.getInstalledApplications(
+    onlyAppsWithLaunchIntent: true,
+    includeSystemApps: true,
+    includeAppIcons: true,
+  );
+  appList.shuffle();
+  return appList.take(6).cast<ApplicationWithIcon>();
+});

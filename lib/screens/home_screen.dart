@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+
+import 'package:device_apps/device_apps.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rglauncher/data/configs.dart';
@@ -37,6 +40,8 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final allApps = ref.watch(installedAppsProvider);
+
     return WillPopScope(
       onWillPop: () async => false,
       child: CommandWrapper(
@@ -141,6 +146,26 @@ class _HomePageState extends ConsumerState<HomePage> {
                 onTap: () => _openSystemListScreen(context),
               ),
               const TwoLineDivider(),
+              ...allApps.when(
+                error: (error, stack) => [],
+                loading: () => [
+                  const TwoLineGridItem(child: LoadingTile()),
+                ],
+                data: (appList) {
+                  return [
+                    for (final app in appList)
+                      TwoLineGridItem(
+                        child: AppTile(
+                          appName: app.appName,
+                          icon: app.icon,
+                        ),
+                        onTap: () {
+                          DeviceApps.openApp(app.packageName);
+                        },
+                      )
+                  ];
+                },
+              ),
               const TwoLineGridItem(
                 child: MenuTile(
                   label: 'All apps',
@@ -170,7 +195,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     Navigate.to(
       (context) => SingleGameListScreen(
         title: title,
-        gameList: [],
+        gameList: const [],
       ),
       direction: Axis.vertical,
     );
@@ -243,6 +268,43 @@ class MenuTile extends StatelessWidget {
   }
 }
 
+class AppTile extends StatelessWidget {
+  const AppTile({
+    super.key,
+    required this.icon,
+    required this.appName,
+  });
+
+  final Uint8List icon;
+  final String appName;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Material(
+      borderRadius: BorderRadius.circular(16),
+      color: Colors.orange.shade200.withOpacity(0.54),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        child: Stack(
+          children: [
+            Text(appName, style: textTheme.titleMedium),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Image.memory(
+                icon,
+                width: 60,
+                height: 60,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class AddMenuTile extends StatelessWidget {
   const AddMenuTile({Key? key}) : super(key: key);
 
@@ -258,6 +320,28 @@ class AddMenuTile extends StatelessWidget {
           Icons.add_rounded,
           color: Colors.white38,
           size: 48,
+        ),
+      ),
+    );
+  }
+}
+
+class LoadingTile extends StatelessWidget {
+  const LoadingTile({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(width: 2, color: Colors.white38),
+      ),
+      alignment: Alignment.center,
+      child: const SizedBox(
+        width: 36,
+        height: 36,
+        child: CircularProgressIndicator(
+          color: Colors.white54,
         ),
       ),
     );

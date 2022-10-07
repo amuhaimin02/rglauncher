@@ -40,6 +40,14 @@ class _TwoLineGridViewState extends ConsumerState<TwoLineGridView> {
     _arrangeChildren();
   }
 
+  @override
+  void didUpdateWidget(covariant TwoLineGridView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.items != oldWidget.items) {
+      _arrangeChildren();
+    }
+  }
+
   void _arrangeChildren() {
     int itemIndex = 0;
     _arrangedChildren = [];

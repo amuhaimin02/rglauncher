@@ -65,7 +65,7 @@ final selectedMenuIndexProvider = StateProvider((ref) => 0);
 final selectedGameListIndexProvider = StateProvider((ref) => 0);
 
 final selectedSystemProvider = FutureProvider((ref) async {
-  final systems = await ref.watch(allSystemsProvider.future);
+  final systems = await ref.watch(scannedSystemProvider.future);
   return systems[ref.watch(selectedSystemIndexProvider)];
 });
 

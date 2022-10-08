@@ -62,8 +62,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 failedLabel: 'Failed scraping!',
                 successLabel: 'Done scraping',
                 task: (update) async {
-                  final library = await ref.read(gameLibraryProvider.future);
-                  final allGames = library.values.flattened.toList();
+                  final allGames = await ref.read(allGamesProvider.future);
                   final totalGames = allGames.length;
                   await services<LibraryManager>().scrapeAndStoreGameImages(
                     games: allGames,

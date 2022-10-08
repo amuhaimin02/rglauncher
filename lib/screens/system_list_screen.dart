@@ -19,54 +19,54 @@ class SystemListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final allSystems = ref.watch(allSystemsProvider);
-    // return allSystems.when(
-    //   loading: () => const LoadingWidget(),
-    //   error: (error, stack) => Text(error.toString()),
-    //   data: (systems) {
-    final system = allSystems[ref.watch(selectedSystemIndexProvider)];
-    return LauncherScaffold(
-      backgroundImage:
-          FileImage(services<MediaManager>().getSystemImageFile(system)),
-      body: CommandWrapper(
-        commands: [
-          Command(
-            button: CommandButton.a,
-            label: 'Open',
-            onTap: () => _openGameListScreen(context),
+    final scannedSystems = ref.watch(scannedSystemProvider);
+    return scannedSystems.when(
+      loading: () => const LoadingWidget(),
+      error: (error, stack) => Text(error.toString()),
+      data: (systems) {
+        final system = systems[ref.watch(selectedSystemIndexProvider)];
+        return LauncherScaffold(
+          backgroundImage:
+              FileImage(services<MediaManager>().getSystemImageFile(system)),
+          body: CommandWrapper(
+            commands: [
+              Command(
+                button: CommandButton.a,
+                label: 'Open',
+                onTap: () => _openGameListScreen(context),
+              ),
+              Command(
+                button: CommandButton.b,
+                label: 'Back',
+                onTap: () => Navigate.back(),
+              ),
+            ],
+            child: GamepadListener(
+              key: const ValueKey('system'),
+              onDirectional: (direction, repeating) {
+                // int itemSize = ref.read(allSystemsProvider).length;
+                // if (direction == GamepadDirection.left) {
+                //   rangeLimit(
+                //     value: ref.read(selectedSystemIndexProvider) - 1,
+                //     max: itemSize,
+                //     ifInRange: () =>
+                //         ref.read(selectedSystemIndexProvider.state).state--,
+                //   );
+                // } else if (direction == GamepadDirection.right) {
+                //   rangeLimit(
+                //     value: ref.read(selectedSystemIndexProvider) + 1,
+                //     max: itemSize,
+                //     ifInRange: () =>
+                //         ref.read(selectedSystemIndexProvider.state).state++,
+                //   );
+                // }
+              },
+              onA: () => _openGameListScreen(context),
+              child: const SystemPageView(),
+            ),
           ),
-          Command(
-            button: CommandButton.b,
-            label: 'Back',
-            onTap: () => Navigate.back(),
-          ),
-        ],
-        child: GamepadListener(
-          key: const ValueKey('system'),
-          onDirectional: (direction, repeating) {
-            // int itemSize = ref.read(allSystemsProvider).length;
-            // if (direction == GamepadDirection.left) {
-            //   rangeLimit(
-            //     value: ref.read(selectedSystemIndexProvider) - 1,
-            //     max: itemSize,
-            //     ifInRange: () =>
-            //         ref.read(selectedSystemIndexProvider.state).state--,
-            //   );
-            // } else if (direction == GamepadDirection.right) {
-            //   rangeLimit(
-            //     value: ref.read(selectedSystemIndexProvider) + 1,
-            //     max: itemSize,
-            //     ifInRange: () =>
-            //         ref.read(selectedSystemIndexProvider.state).state++,
-            //   );
-            // }
-          },
-          onA: () => _openGameListScreen(context),
-          child: const SystemPageView(),
-        ),
-      ),
-      //   );
-      // },
+        );
+      },
     );
   }
 
@@ -102,7 +102,7 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
   @override
   Widget build(BuildContext context) {
     final currentSystemIndex = ref.watch(selectedSystemIndexProvider);
-    final gameLibrary = ref.watch(gameLibraryProvider);
+    final scannedSystems = ref.watch(scannedSystemProvider);
 
     ref.listen(selectedSystemIndexProvider, (prevIndex, newIndex) {
       _pageController.animateToPage(
@@ -112,18 +112,16 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
       );
     });
 
-    return gameLibrary.when(
+    return scannedSystems.when(
       error: (error, stack) => Text('$error\n$stack'),
       loading: () => const LoadingWidget(),
-      data: (library) {
-        final systems = library.keys.toList();
+      data: (systems) {
         return Column(
           children: [
             Expanded(
               flex: 6,
               child: GameSystemDetail(
                 system: systems[currentSystemIndex],
-                totalGames: library[systems[currentSystemIndex]]?.length,
               ),
             ),
             Expanded(
@@ -131,7 +129,7 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
               child: PageView(
                 controller: _pageController,
                 children: [
-                  for (int i = 0; i < library.length; i++)
+                  for (int i = 0; i < systems.length; i++)
                     SystemItemTile(
                       selected: currentSystemIndex == i,
                       onTap: () => _openGameListScreen(context, i),
@@ -198,19 +196,18 @@ class SystemItemTile extends StatelessWidget {
   }
 }
 
-class GameSystemDetail extends StatelessWidget {
+class GameSystemDetail extends ConsumerWidget {
   const GameSystemDetail({
     Key? key,
     required this.system,
-    this.totalGames,
   }) : super(key: key);
 
   final System system;
-  final int? totalGames;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
+    final gameList = ref.watch(gameLibraryProvider(system));
     return Container(
       width: 600,
       margin: const EdgeInsets.all(24),
@@ -245,7 +242,11 @@ class GameSystemDetail extends StatelessWidget {
             child: Align(
               alignment: AlignmentDirectional.centerStart,
               child: SmallLabel(
-                text: Text('${totalGames ?? 0} games'),
+                text: gameList.when(
+                  data: (data) => Text('${data.length} games'),
+                  error: (error, stack) => SizedBox(),
+                  loading: () => SizedBox(),
+                ),
               ),
             ),
           )

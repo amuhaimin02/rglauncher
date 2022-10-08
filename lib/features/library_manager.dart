@@ -1,51 +1,32 @@
 import 'dart:io';
 import 'dart:isolate';
 
-import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
+import 'package:rglauncher/features/csv_storage.dart';
 import 'package:rglauncher/features/scraper.dart';
-import 'package:rglauncher/features/storage.dart';
 
 import '../data/models.dart';
 import '../data/typedefs.dart';
-import '../utils/config_loader.dart';
 import 'media_manager.dart';
 import 'services.dart';
 
 class LibraryManager {
   const LibraryManager();
 
-  Future<void> preloadData() async {
-    final storage = services<Storage>();
-    final systemConfig = await loadConfigFromAsset('config/systems.toml');
-    final systems = systemConfig.entries
-        .map((e) => System.fromMap({...e.value, 'code': e.key}))
-        .toList();
-    storage.systemBox.removeAll();
-    storage.systemBox.putMany(systems);
-
-    final emulatorConfig = await loadConfigFromAsset('config/emulators.toml');
-    final emulators = emulatorConfig.entries
-        .map((e) => Emulator.fromMap({...e.value, 'code': e.key}))
-        .toList();
-    storage.emulatorBox.removeAll();
-    storage.emulatorBox.putMany(emulators);
-  }
-
   Future<void> scanLibrariesFromStorage({
     required List<System> systems,
     required List<Directory> storagePaths,
   }) async {
-    services<Storage>().gameBox.removeAll();
-    final scannedGames = await compute(
+    await compute(
       _doScanLibraryFromStorage,
       {
-        'systems': systems.map((e) => e.toMap()).toList(),
+        'csvStorage': services<CsvStorage>(),
+        'mediaManager': services<MediaManager>(),
+        'systems': systems,
         'storagePaths': storagePaths,
       },
     );
-    services<Storage>().gameBox.putMany(scannedGames);
   }
 
   Future<void> downloadAndStoreSystemImages(
@@ -100,15 +81,17 @@ Future<void> _doScrapeAndStoreGameImages(JsonMap args) async {
   }
 }
 
-Future<List<Game>> _doScanLibraryFromStorage(JsonMap args) async {
-  final systems = args['systems'] as List<JsonMap>;
+Future<void> _doScanLibraryFromStorage(JsonMap args) async {
+  final systems = args['systems'] as List<System>;
   final storagePaths = args['storagePaths'] as List<Directory>;
+  final storage = args['csvStorage'] as CsvStorage;
+  final mediaManager = args['mediaManager'] as MediaManager;
 
   // final status = await Permission.manageExternalStorage.request();
-  final gameLists = <JsonMap, List<Game>>{};
+  final gameLists = <System, List<Game>>{};
   final folderToSystemMap = {
     for (final system in systems)
-      for (final folderName in system['folders']) folderName: system
+      for (final folderName in system.folderNames) folderName: system
   };
 
   for (final path in storagePaths) {
@@ -124,26 +107,29 @@ Future<List<Game>> _doScanLibraryFromStorage(JsonMap args) async {
     }
   }
 
-  final sortedGameLists = <JsonMap, List<Game>>{};
+  final sortedGameLists = <System, List<Game>>{};
   for (final system in systems) {
-    if (gameLists[system] != null) {
+    if (gameLists[system] != null && gameLists[system]!.isNotEmpty) {
       // Sort systems based on position
       sortedGameLists[system] = gameLists[system]!;
 
       // Sort games based on name
       sortedGameLists[system]!.sort((a, b) => a.name.compareTo(b.name));
+      storage.saveCsvToFile<Game>(
+        mediaManager.getGameListFile(system),
+        sortedGameLists[system]!,
+        (item) => [item.name, item.filepath],
+      );
     }
   }
-  return sortedGameLists.values.flattened.toList();
-  // return sortedGameLists;
 }
 
 List<Game> _doScanDirectoriesForGames(
-  JsonMap system,
+  System system,
   Directory directory,
 ) {
   final matcher = RegExp(
-    '(${system['extensions'].join('|')})\$',
+    '(${system.supportedExtensions.join('|')})\$',
     caseSensitive: false,
   );
 
@@ -154,7 +140,7 @@ List<Game> _doScanDirectoriesForGames(
       .map((file) => Game(
             name: basename(file.path),
             filepath: file.path,
-            // system: system,
+            system: system,
           ))
       .toList();
 }

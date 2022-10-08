@@ -1,13 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rglauncher/data/models.dart';
 import 'package:rglauncher/features/media_manager.dart';
 import 'package:rglauncher/widgets/fading_edge.dart';
 import 'package:rglauncher/widgets/launcher_scaffold.dart';
+import 'package:rglauncher/widgets/loading_widget.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
 import '../data/configs.dart';
 import '../data/providers.dart';
+import '../features/app_launcher.dart';
 import '../features/services.dart';
 import '../utils/navigate.dart';
 import '../widgets/command.dart';
@@ -19,12 +23,11 @@ class GameListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final gameLibrary = ref.watch(gameLibraryProvider);
-    return gameLibrary.when(
+    final scannedSystems = ref.watch(scannedSystemProvider);
+    return scannedSystems.when(
       error: (error, stack) => Text('$error\n$stack'),
       loading: () => const CircularProgressIndicator(),
-      data: (library) {
-        final systems = library.keys.toList();
+      data: (systems) {
         return LauncherScaffold(
           // backgroundImage: FileImage(
           //   services<MediaManager>().getGameMediaFile(game),
@@ -45,8 +48,10 @@ class GameListScreen extends ConsumerWidget {
           //   },
           // ),
           body: GameListContent(
-            titles: systems.map((e) => e.name).toList(),
-            gameLists: library.values.toList(),
+            pageSize: systems.length,
+            getTitle: (index) => systems[index].name,
+            getGameList: (index) =>
+                ref.watch(gameLibraryProvider(systems[index]).future),
             onPageChanged: (newIndex) {
               Future.microtask(() {
                 ref.read(selectedSystemIndexProvider.state).state = newIndex;
@@ -71,8 +76,9 @@ class SingleGameListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GameListContent(
-      titles: [title],
-      gameLists: [gameList],
+      pageSize: 1,
+      getTitle: (_) => title,
+      getGameList: (_) async => gameList,
     );
   }
 }
@@ -96,14 +102,16 @@ class SingleGameListScreen extends StatelessWidget {
 class GameListContent extends ConsumerStatefulWidget {
   const GameListContent({
     Key? key,
-    required this.titles,
-    required this.gameLists,
+    required this.pageSize,
+    required this.getTitle,
+    required this.getGameList,
     this.onPageChanged,
-  })  : paginated = titles.length > 1,
+  })  : paginated = pageSize > 1,
         super(key: key);
 
-  final List<String> titles;
-  final List<List<Game>> gameLists;
+  final int pageSize;
+  final String Function(int index) getTitle;
+  final Future<List<Game>> Function(int index) getGameList;
   final Function(int index)? onPageChanged;
   final bool paginated;
 
@@ -144,33 +152,45 @@ class _GameListContentState extends ConsumerState<GameListContent> {
             fadingEdgeSize: 8,
             child: PageView.builder(
               controller: widget.paginated ? _pageController : null,
-              itemCount: widget.titles.length,
-              itemBuilder: (context, index) => Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(20.0) -
-                        const EdgeInsets.only(bottom: 20),
-                    child: Row(
-                      children: [
-                        Text(
-                          widget.titles[index],
-                          style: textTheme.headlineSmall!
-                              .copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(width: 12),
-                        SmallLabel(
-                          text: Text(widget.gameLists[index].length.toString()),
-                        )
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: GameListView(
-                      gameList: widget.gameLists[index],
-                    ),
-                  ),
-                ],
-              ),
+              itemCount: widget.pageSize,
+              itemBuilder: (context, index) {
+                return FutureBuilder<List<Game>>(
+                    future: widget.getGameList(index),
+                    builder: (context, snapshot) {
+                      return Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(20.0) -
+                                const EdgeInsets.only(bottom: 20),
+                            child: Row(
+                              children: [
+                                Text(
+                                  widget.getTitle(index),
+                                  style: textTheme.headlineSmall!
+                                      .copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(width: 12),
+                                if (snapshot.data != null)
+                                  SmallLabel(
+                                    text:
+                                        Text(snapshot.data!.length.toString()),
+                                  )
+                              ],
+                            ),
+                          ),
+                          Expanded(child: () {
+                            if (snapshot.data != null) {
+                              return GameListView(
+                                gameList: snapshot.data!,
+                              );
+                            } else {
+                              return const LoadingWidget();
+                            }
+                          }()),
+                        ],
+                      );
+                    });
+              },
               onPageChanged: widget.onPageChanged,
             ),
           ),
@@ -420,8 +440,8 @@ class _GameListViewState extends ConsumerState<GameListView> {
 
   void _onItemSelected(BuildContext context) async {
     final game = widget.gameList[_currentIndex];
-    final emulators = ref.read(allEmulatorsProvider);
-    // services<AppLauncher>().launchGameUsingEmulator(
-    //     game, emulators.firstWhere((e) => e.forSystem == game.system.code));
+    final emulators = await ref.read(allEmulatorsProvider.future);
+    services<AppLauncher>().launchGameUsingEmulator(
+        game, emulators.firstWhere((e) => e.forSystem == game.system.code));
   }
 }

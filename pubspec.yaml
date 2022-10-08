@@ -52,10 +52,7 @@ dependencies:
   transparent_image: ^2.0.0
   device_apps: ^2.2.0
   palette_generator: ^0.3.3+2
-  objectbox: ^1.6.2
-  objectbox_flutter_libs: any
-
-
+  csv: ^5.0.1
 
 
 
@@ -69,8 +66,6 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^2.0.1
-  build_runner: ^2.0.0
-  objectbox_generator: any
 
 
 # For information on the generic Dart part of this file, see the

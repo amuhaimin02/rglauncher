@@ -21,14 +21,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   void initState() {
     super.initState();
     Future.microtask(() async {
-      await initializeServices();
-      final systems = ref.watch(allSystemsProvider);
-      // services<LibraryManager>().downloadAndStoreSystemImages(systems: systems);
-      await services<LibraryManager>().preloadData();
-      await services<LibraryManager>().scanLibrariesFromStorage(
-        systems: systems,
-        storagePaths: [Directory('/storage/emulated/0/EmuROM')],
+      final notifier = ref.read(notificationProvider.notifier);
+      await notifier.runTask(
+        initialLabel: 'Loading library...',
+        task: (update) async {
+          await initializeServices();
+          final systems = await ref.watch(allSystemsProvider.future);
+          // services<LibraryManager>().downloadAndStoreSystemImages(systems: systems);
+          await services<LibraryManager>().scanLibrariesFromStorage(
+            systems: systems,
+            storagePaths: [Directory('/storage/emulated/0/EmuROM')],
+          );
+        },
       );
+
       Navigate.to((context) => const HomeScreen());
     });
   }

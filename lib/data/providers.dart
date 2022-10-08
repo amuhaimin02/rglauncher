@@ -1,14 +1,18 @@
+import 'dart:io';
+
 import 'package:battery_plus/battery_plus.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:device_apps/device_apps.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rglauncher/data/models.dart';
+import 'package:rglauncher/features/csv_storage.dart';
+import 'package:rglauncher/features/media_manager.dart';
 import 'package:rglauncher/features/notification_manager.dart';
 import 'package:rglauncher/features/services.dart';
 import 'package:rglauncher/utils/extensions.dart';
 
-import '../features/storage.dart';
+import '../utils/config_loader.dart';
 import '../widgets/command.dart';
 
 final routeObserverProvider = Provider((ref) => RouteObserver<PageRoute>());
@@ -36,15 +40,21 @@ final connectivityStateProvider =
 
 final commandProvider = StateProvider<List<Command>>((ref) => []);
 
-final allSystemsProvider = Provider(
-  (ref) {
-    return services<Storage>().systemBox.getAll();
+final allSystemsProvider = FutureProvider(
+  (ref) async {
+    final systemConfig = await loadConfigFromAsset('config/systems.toml');
+    return systemConfig.entries
+        .map((e) => System.fromMap({...e.value, 'code': e.key}))
+        .toList();
   },
 );
 
-final allEmulatorsProvider = Provider(
-  (ref) {
-    return services<Storage>().emulatorBox.getAll();
+final allEmulatorsProvider = FutureProvider(
+  (ref) async {
+    final emulatorConfig = await loadConfigFromAsset('config/emulators.toml');
+    return emulatorConfig.entries
+        .map((e) => Emulator.fromMap({...e.value, 'code': e.key}))
+        .toList();
   },
 );
 
@@ -55,24 +65,58 @@ final selectedMenuIndexProvider = StateProvider((ref) => 0);
 final selectedGameListIndexProvider = StateProvider((ref) => 0);
 
 final selectedSystemProvider = FutureProvider((ref) async {
-  final systems = ref.watch(allSystemsProvider);
+  final systems = await ref.watch(allSystemsProvider.future);
   return systems[ref.watch(selectedSystemIndexProvider)];
 });
 
 final selectedGameProvider = FutureProvider((ref) async {
   final system = await ref.watch(selectedSystemProvider.future);
-  final library = await ref.watch(gameLibraryProvider.future);
+  final library = await ref.watch(gameLibraryProvider(system).future);
   final index = ref.watch(selectedGameListIndexProvider);
-  return library[system]?.get(index);
+  return library.get(index);
 });
 
-final gameLibraryProvider = FutureProvider((ref) async {
-  final systems = ref.read(allSystemsProvider);
-  final allGames = services<Storage>().gameBox.getAll();
-  print(allGames.first.system);
-  return {
-    systems.first: allGames,
-  };
+final scannedSystemProvider = FutureProvider((ref) async {
+  final system = await ref.watch(allSystemsProvider.future);
+  return services<MediaManager>().getSavedGameList(system);
+});
+
+final gameLibraryProvider =
+    FutureProvider.family<List<Game>, System>((ref, system) async {
+  return await services<CsvStorage>().loadCsvFromFile(
+    services<MediaManager>().getGameListFile(system),
+    (line) => Game(
+      name: line[0] as String,
+      filepath: line[1] as String,
+      system: system,
+    ),
+  );
+  // return {
+  //   for (final s in systems)
+  //     s: await () async {
+  //       try {
+  //         return await services<CsvStorage>().loadCsvFromFile(
+  //           services<MediaManager>().getGameListFile(s),
+  //           (line) => Game(
+  //               name: line[0] as String,
+  //               filepath: line[1] as String,
+  //               system: s),
+  //         );
+  //       } on FileSystemException catch (e) {
+  //         return <Game>[];
+  //       }
+  //     }()
+  // };
+});
+
+final allGamesProvider = FutureProvider((ref) async {
+  final scannedSystems = await ref.watch(scannedSystemProvider.future);
+  final allGames = <Game>[];
+  for (final system in scannedSystems) {
+    final systemGames = await ref.watch(gameLibraryProvider(system).future);
+    allGames.addAll(systemGames);
+  }
+  return allGames;
 });
 
 final currentBackgroundImageProvider =
@@ -89,10 +133,10 @@ final installedAppsProvider = FutureProvider((ref) async {
 });
 
 final pinnedGamesProvider = FutureProvider<List<Game>>((ref) async {
-  final library = await ref.watch(gameLibraryProvider.future);
-  final systems = ref.watch(allSystemsProvider);
+  final systems = await ref.watch(allSystemsProvider.future);
   final gba = systems.firstWhere((s) => s.code == 'GBA');
-  return library[gba]?.take(4).toList() ?? <Game>[];
+  final library = await ref.watch(gameLibraryProvider(gba).future);
+  return library.take(4).toList();
 });
 
 final notificationProvider =

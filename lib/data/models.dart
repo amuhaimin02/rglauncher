@@ -1,12 +1,20 @@
-class System {
-  final String name;
-  final String code;
-  final String producer;
-  final String imageLink;
-  final List<String> folderNames;
-  final List<String> supportedExtensions;
+import 'package:objectbox/objectbox.dart';
+import 'package:rglauncher/data/typedefs.dart';
 
-  const System({
+import '../objectbox.g.dart';
+
+@Entity()
+class System {
+  int id;
+  String name;
+  String code;
+  String producer;
+  String imageLink;
+  List<String> folderNames;
+  List<String> supportedExtensions;
+
+  System({
+    this.id = 0,
     required this.name,
     required this.code,
     required this.producer,
@@ -15,36 +23,51 @@ class System {
     required this.supportedExtensions,
   });
 
-  factory System.fromMap(Map<String, dynamic> map) {
+  @override
+  String toString() => 'System: $code';
+
+  @Backlink('system')
+  final games = ToMany<Game>();
+
+  @Backlink('system')
+  final emulators = ToMany<Emulator>();
+
+  JsonMap toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'code': code,
+      'producer': producer,
+      'image': imageLink,
+      'folders': folderNames,
+      'extensions': supportedExtensions,
+    };
+  }
+
+  factory System.fromMap(JsonMap map) {
     return System(
-      name: map['name'],
-      code: map['code'],
-      producer: map['producer'],
-      imageLink: map['image'],
+      id: (map['id'] ?? 0) as int,
+      name: map['name'] as String,
+      code: map['code'] as String,
+      producer: map['producer'] as String,
+      imageLink: map['image'] as String,
       folderNames: (map['folders'] as List).cast<String>(),
       supportedExtensions: (map['extensions'] as List).cast<String>(),
     );
   }
-  @override
-  String toString() => 'System: $code';
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is System && runtimeType == other.runtimeType && code == other.code;
-
-  @override
-  int get hashCode => code.hashCode;
 }
 
+@Entity()
 class Emulator {
-  final String name;
-  final String code;
-  final String executable;
-  final String forSystem;
-  final String? libretroPath;
+  int id;
+  String name;
+  String code;
+  String executable;
+  String forSystem;
+  String? libretroPath;
 
-  const Emulator({
+  Emulator({
+    this.id = 0,
     required this.name,
     required this.code,
     required this.executable,
@@ -52,15 +75,7 @@ class Emulator {
     this.libretroPath,
   });
 
-  factory Emulator.fromMap(Map<String, dynamic> map) {
-    return Emulator(
-      name: map['name'],
-      code: map['code'],
-      executable: map['executable'],
-      forSystem: map['for'],
-      libretroPath: map['libretro'],
-    );
-  }
+  final system = ToOne<System>();
 
   @override
   String toString() => 'Emulator: $code';
@@ -73,25 +88,40 @@ class Emulator {
   String get androidComponentName =>
       executable.substring(executable.indexOf('/') + 1);
 
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is Emulator &&
-          runtimeType == other.runtimeType &&
-          code == other.code;
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'code': code,
+      'executable': executable,
+      'for': forSystem,
+      'libretro': libretroPath,
+    };
+  }
 
-  @override
-  int get hashCode => code.hashCode;
+  factory Emulator.fromMap(Map<String, dynamic> map) {
+    return Emulator(
+      id: (map['id'] ?? 0) as int,
+      name: map['name'] as String,
+      code: map['code'] as String,
+      executable: map['executable'] as String,
+      forSystem: map['for'] as String,
+      libretroPath: map['libretro'] as String?,
+    );
+  }
 }
 
-class GameEntry {
-  final String name;
-  final String filepath;
-  final System system;
+@Entity()
+class Game {
+  int id;
+  String name;
+  String filepath;
 
-  const GameEntry({
+  Game({
+    this.id = 0,
     required this.name,
     required this.filepath,
-    required this.system,
   });
+
+  final system = ToOne<System>();
 }

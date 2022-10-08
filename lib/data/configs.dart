@@ -6,3 +6,4 @@ const defaultPageTransitionDuration = Duration(milliseconds: 500);
 const gameListItemHeight = 48.0;
 
 const systemImageFolderName = 'system_images';
+const gameMediaFolderName = 'media';

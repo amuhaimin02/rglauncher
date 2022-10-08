@@ -1,17 +1,14 @@
-import 'dart:io';
-
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path/path.dart';
 import 'package:rglauncher/data/models.dart';
-import 'package:rglauncher/data/tasks.dart';
+import 'package:rglauncher/features/media_manager.dart';
 import 'package:rglauncher/widgets/fading_edge.dart';
 import 'package:rglauncher/widgets/launcher_scaffold.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
 import '../data/configs.dart';
 import '../data/providers.dart';
+import '../features/services.dart';
 import '../utils/navigate.dart';
 import '../widgets/command.dart';
 import '../widgets/gamepad_listener.dart';
@@ -23,16 +20,15 @@ class GameListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final gameLibrary = ref.watch(gameLibraryProvider);
-
     return gameLibrary.when(
       error: (error, stack) => Text('$error\n$stack'),
       loading: () => const CircularProgressIndicator(),
       data: (library) {
         final systems = library.keys.toList();
         return LauncherScaffold(
-          backgroundImage: NetworkImage(
-            'https://picsum.photos/1280/720?g=${ref.watch(selectedGameListIndexProvider)}',
-          ),
+          // backgroundImage: FileImage(
+          //   services<MediaManager>().getGameMediaFile(game),
+          // ),
           // body: PageView.builder(
           //   controller: _pageController,
           //   itemCount: systems.length,
@@ -70,24 +66,13 @@ class SingleGameListScreen extends StatelessWidget {
       : super(key: key);
 
   final String title;
-  final List<GameEntry> gameList;
+  final List<Game> gameList;
 
   @override
   Widget build(BuildContext context) {
-    return CommandWrapper(
-      commands: [
-        Command(button: CommandButton.x, label: 'Options', onTap: (context) {}),
-        Command(button: CommandButton.a, label: 'Open', onTap: (context) {}),
-        Command(
-          button: CommandButton.b,
-          label: 'Back',
-          onTap: (context) => Navigate.back(),
-        ),
-      ],
-      child: GameListContent(
-        titles: [title],
-        gameLists: [gameList],
-      ),
+    return GameListContent(
+      titles: [title],
+      gameLists: [gameList],
     );
   }
 }
@@ -118,7 +103,7 @@ class GameListContent extends ConsumerStatefulWidget {
         super(key: key);
 
   final List<String> titles;
-  final List<List<GameEntry>> gameLists;
+  final List<List<Game>> gameLists;
   final Function(int index)? onPageChanged;
   final bool paginated;
 
@@ -227,8 +212,9 @@ class GameDetailPane extends ConsumerWidget {
                 data: (game) {
                   if (game != null) {
                     return ImageWithStatus(
-                      image: NetworkImage(
-                          'https://picsum.photos/640/480?gg=${game.name}'),
+                      image: FileImage(
+                        services<MediaManager>().getGameMediaFile(game),
+                      ),
                     );
                   } else {
                     return Container(
@@ -266,7 +252,7 @@ class GameListView extends ConsumerStatefulWidget {
     required this.gameList,
   }) : super(key: key);
 
-  final List<GameEntry> gameList;
+  final List<Game> gameList;
 
   @override
   ConsumerState<GameListView> createState() => _GameListViewState();
@@ -290,16 +276,16 @@ class _GameListViewState extends ConsumerState<GameListView> {
 
     return CommandWrapper(
       commands: [
-        Command(button: CommandButton.x, label: 'Options', onTap: (context) {}),
+        Command(button: CommandButton.x, label: 'Options', onTap: () {}),
         Command(
           button: CommandButton.a,
           label: 'Open',
-          onTap: (context) => _onItemSelected(context),
+          onTap: () => _onItemSelected(context),
         ),
         Command(
           button: CommandButton.b,
           label: 'Back',
-          onTap: (context) => Navigate.back(),
+          onTap: () => Navigate.back(),
         ),
       ],
       child: GamepadListener(
@@ -434,8 +420,8 @@ class _GameListViewState extends ConsumerState<GameListView> {
 
   void _onItemSelected(BuildContext context) async {
     final game = widget.gameList[_currentIndex];
-    final emulators = await ref.read(allEmulatorsProvider.future);
-    launchGameUsingEmulator(
-        game, emulators.firstWhere((e) => e.forSystem == game.system.code));
+    final emulators = ref.read(allEmulatorsProvider);
+    // services<AppLauncher>().launchGameUsingEmulator(
+    //     game, emulators.firstWhere((e) => e.forSystem == game.system.code));
   }
 }

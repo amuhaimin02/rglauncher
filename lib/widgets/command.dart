@@ -28,7 +28,7 @@ class CommandInfo extends ConsumerWidget {
               key: ValueKey(c.button),
               type: MaterialType.transparency,
               child: InkWell(
-                onTap: () => Future.microtask(() => c.onTap(context)),
+                onTap: c.onTap,
                 child: Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
@@ -100,7 +100,7 @@ class _CommandWrapperState extends ConsumerState<CommandWrapper>
 class Command {
   final CommandButton button;
   final String label;
-  final Function(BuildContext context) onTap;
+  final VoidCallback onTap;
 
   const Command({
     required this.button,

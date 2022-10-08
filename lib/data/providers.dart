@@ -1,16 +1,14 @@
-import 'dart:io';
-
 import 'package:battery_plus/battery_plus.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:device_apps/device_apps.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rglauncher/data/models.dart';
-import 'package:rglauncher/data/tasks.dart';
+import 'package:rglauncher/features/notification_manager.dart';
+import 'package:rglauncher/features/services.dart';
 import 'package:rglauncher/utils/extensions.dart';
 
-import '../utils/config_loader.dart';
+import '../features/storage.dart';
 import '../widgets/command.dart';
 
 final routeObserverProvider = Provider((ref) => RouteObserver<PageRoute>());
@@ -38,21 +36,15 @@ final connectivityStateProvider =
 
 final commandProvider = StateProvider<List<Command>>((ref) => []);
 
-final allSystemsProvider = FutureProvider(
-  (ref) async {
-    final data = await loadConfigFromAsset('config/systems.toml');
-    return data.entries
-        .map((e) => System.fromMap({...e.value, 'code': e.key}))
-        .toList();
+final allSystemsProvider = Provider(
+  (ref) {
+    return services<Storage>().systemBox.getAll();
   },
 );
 
-final allEmulatorsProvider = FutureProvider(
-  (ref) async {
-    final data = await loadConfigFromAsset('config/emulators.toml');
-    return data.entries
-        .map((e) => Emulator.fromMap({...e.value, 'code': e.key}))
-        .toList();
+final allEmulatorsProvider = Provider(
+  (ref) {
+    return services<Storage>().emulatorBox.getAll();
   },
 );
 
@@ -63,7 +55,7 @@ final selectedMenuIndexProvider = StateProvider((ref) => 0);
 final selectedGameListIndexProvider = StateProvider((ref) => 0);
 
 final selectedSystemProvider = FutureProvider((ref) async {
-  final systems = await ref.watch(allSystemsProvider.future);
+  final systems = ref.watch(allSystemsProvider);
   return systems[ref.watch(selectedSystemIndexProvider)];
 });
 
@@ -75,11 +67,12 @@ final selectedGameProvider = FutureProvider((ref) async {
 });
 
 final gameLibraryProvider = FutureProvider((ref) async {
-  final result = await compute(scanLibrariesFromStorageCompute, {
-    'systems': await ref.read(allSystemsProvider.future),
-    'storagePaths': [Directory('/storage/emulated/0/EmuROM')]
-  });
-  return result;
+  final systems = ref.read(allSystemsProvider);
+  final allGames = services<Storage>().gameBox.getAll();
+  print(allGames.first.system);
+  return {
+    systems.first: allGames,
+  };
 });
 
 final currentBackgroundImageProvider =
@@ -95,9 +88,14 @@ final installedAppsProvider = FutureProvider((ref) async {
   return appList.take(6).cast<ApplicationWithIcon>();
 });
 
-final pinnedGamesProvider = FutureProvider<List<GameEntry>>((ref) async {
+final pinnedGamesProvider = FutureProvider<List<Game>>((ref) async {
   final library = await ref.watch(gameLibraryProvider.future);
-  final systems = await ref.watch(allSystemsProvider.future);
+  final systems = ref.watch(allSystemsProvider);
   final gba = systems.firstWhere((s) => s.code == 'GBA');
-  return library[gba]?.take(4).toList() ?? <GameEntry>[];
+  return library[gba]?.take(4).toList() ?? <Game>[];
 });
+
+final notificationProvider =
+    StateNotifierProvider<NotificationManager, NotificationMessage?>(
+  (ref) => NotificationManager(),
+);

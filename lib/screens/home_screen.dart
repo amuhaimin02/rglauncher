@@ -1,13 +1,14 @@
-import 'dart:typed_data';
-
+import 'package:collection/collection.dart';
 import 'package:device_apps/device_apps.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:rglauncher/data/configs.dart';
 import 'package:rglauncher/data/providers.dart';
-import 'package:rglauncher/data/tasks.dart';
+import 'package:rglauncher/features/library_manager.dart';
+import 'package:rglauncher/features/services.dart';
 import 'package:rglauncher/screens/system_list_screen.dart';
 import 'package:rglauncher/utils/extensions.dart';
 import 'package:rglauncher/widgets/command.dart';
@@ -52,9 +53,35 @@ class _HomePageState extends ConsumerState<HomePage> {
       child: CommandWrapper(
         commands: [
           Command(
+            button: CommandButton.x,
+            label: 'Refresh game list',
+            onTap: () {
+              final notifier = ref.read(notificationProvider.notifier);
+              notifier.runTask(
+                initialLabel: 'Scraping...',
+                failedLabel: 'Failed scraping!',
+                successLabel: 'Done scraping',
+                task: (update) async {
+                  final library = await ref.read(gameLibraryProvider.future);
+                  final allGames = library.values.flattened.toList();
+                  final totalGames = allGames.length;
+                  await services<LibraryManager>().scrapeAndStoreGameImages(
+                    games: allGames,
+                    progress: (index) {
+                      update(
+                        'Scraping ${allGames[index].name}',
+                        index / totalGames,
+                      );
+                    },
+                  );
+                },
+              );
+            },
+          ),
+          Command(
             button: CommandButton.a,
             label: 'Open',
-            onTap: (context) => _onButtonAPressed(context),
+            onTap: () => _onButtonAPressed(context),
           ),
         ],
         child: GamepadListener(
@@ -99,7 +126,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           onB: () {},
           child: TwoLineGridView(
             padding: const EdgeInsets.all(64),
-            childPadding: const EdgeInsets.all(4),
+            childPadding: const EdgeInsets.all(8),
             onItemArranged: (types) => _itemTypes = types,
             itemLauncherCallback: (launcher) => _itemLauncher = launcher,
             items: [
@@ -129,13 +156,13 @@ class _HomePageState extends ConsumerState<HomePage> {
                       TwoLineGridItem(
                         child: GameTile(game: game),
                         onTap: () async {
-                          final emulator =
-                              await ref.read(allEmulatorsProvider.future);
-                          launchGameUsingEmulator(
-                            game,
-                            emulator.firstWhere(
-                                (e) => e.forSystem == game.system.code),
-                          );
+                          // final emulator =
+                          //     await ref.read(allEmulatorsProvider.future);
+                          // launchGameUsingEmulator(
+                          //   game,
+                          //   emulator.firstWhere(
+                          //       (e) => e.forSystem == game.system.code),
+                          // );
                         },
                       )
                   ];
@@ -410,7 +437,7 @@ class LoadingTile extends StatelessWidget {
 class GameTile extends StatelessWidget {
   const GameTile({Key? key, required this.game}) : super(key: key);
 
-  final GameEntry game;
+  final Game game;
 
   @override
   Widget build(BuildContext context) {

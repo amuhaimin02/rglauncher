@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rglauncher/data/providers.dart';
-import 'package:rglauncher/data/services.dart';
+import 'package:rglauncher/features/media_manager.dart';
+import 'package:rglauncher/features/services.dart';
 import 'package:rglauncher/screens/game_list_screen.dart';
-import 'package:rglauncher/utils/media_manager.dart';
 import 'package:rglauncher/widgets/loading_widget.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
@@ -20,53 +20,53 @@ class SystemListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final allSystems = ref.watch(allSystemsProvider);
-    return allSystems.when(
-      loading: () => const LoadingWidget(),
-      error: (error, stack) => Text(error.toString()),
-      data: (systems) {
-        final system = systems[ref.watch(selectedSystemIndexProvider)];
-        return LauncherScaffold(
-          backgroundImage:
-              FileImage(services<MediaManager>().getSystemImageFile(system)),
-          body: CommandWrapper(
-            commands: [
-              Command(
-                button: CommandButton.a,
-                label: 'Open',
-                onTap: (context) => _openGameListScreen(context),
-              ),
-              Command(
-                button: CommandButton.b,
-                label: 'Back',
-                onTap: (context) => Navigate.back(),
-              ),
-            ],
-            child: GamepadListener(
-              key: const ValueKey('system'),
-              onDirectional: (direction, repeating) {
-                // int itemSize = ref.read(allSystemsProvider).length;
-                // if (direction == GamepadDirection.left) {
-                //   rangeLimit(
-                //     value: ref.read(selectedSystemIndexProvider) - 1,
-                //     max: itemSize,
-                //     ifInRange: () =>
-                //         ref.read(selectedSystemIndexProvider.state).state--,
-                //   );
-                // } else if (direction == GamepadDirection.right) {
-                //   rangeLimit(
-                //     value: ref.read(selectedSystemIndexProvider) + 1,
-                //     max: itemSize,
-                //     ifInRange: () =>
-                //         ref.read(selectedSystemIndexProvider.state).state++,
-                //   );
-                // }
-              },
-              onA: () => _openGameListScreen(context),
-              child: const SystemPageView(),
-            ),
+    // return allSystems.when(
+    //   loading: () => const LoadingWidget(),
+    //   error: (error, stack) => Text(error.toString()),
+    //   data: (systems) {
+    final system = allSystems[ref.watch(selectedSystemIndexProvider)];
+    return LauncherScaffold(
+      backgroundImage:
+          FileImage(services<MediaManager>().getSystemImageFile(system)),
+      body: CommandWrapper(
+        commands: [
+          Command(
+            button: CommandButton.a,
+            label: 'Open',
+            onTap: () => _openGameListScreen(context),
           ),
-        );
-      },
+          Command(
+            button: CommandButton.b,
+            label: 'Back',
+            onTap: () => Navigate.back(),
+          ),
+        ],
+        child: GamepadListener(
+          key: const ValueKey('system'),
+          onDirectional: (direction, repeating) {
+            // int itemSize = ref.read(allSystemsProvider).length;
+            // if (direction == GamepadDirection.left) {
+            //   rangeLimit(
+            //     value: ref.read(selectedSystemIndexProvider) - 1,
+            //     max: itemSize,
+            //     ifInRange: () =>
+            //         ref.read(selectedSystemIndexProvider.state).state--,
+            //   );
+            // } else if (direction == GamepadDirection.right) {
+            //   rangeLimit(
+            //     value: ref.read(selectedSystemIndexProvider) + 1,
+            //     max: itemSize,
+            //     ifInRange: () =>
+            //         ref.read(selectedSystemIndexProvider.state).state++,
+            //   );
+            // }
+          },
+          onA: () => _openGameListScreen(context),
+          child: const SystemPageView(),
+        ),
+      ),
+      //   );
+      // },
     );
   }
 

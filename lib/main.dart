@@ -3,9 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:rglauncher/data/providers.dart';
-import 'package:rglauncher/data/tasks.dart';
 import 'package:rglauncher/widgets/changeable_background.dart';
-import 'package:rglauncher/widgets/hue_background.dart';
 
 import 'screens/splash_screen.dart';
 import 'utils/navigate.dart';
@@ -29,9 +27,14 @@ class MyApp extends StatelessWidget {
             title: 'RGLauncher',
             debugShowCheckedModeBanner: false,
             navigatorKey: Navigate.key,
-            theme: ThemeData.dark().copyWith(
+            theme: ThemeData.from(
+              colorScheme: const ColorScheme.dark(
+                primary: Colors.white,
+                secondary: Colors.white,
+              ),
               textTheme:
                   GoogleFonts.barlowTextTheme(Typography.englishLike2021),
+            ).copyWith(
               scaffoldBackgroundColor: Colors.transparent,
               splashFactory: InkRipple.splashFactory,
             ),

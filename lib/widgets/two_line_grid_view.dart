@@ -96,19 +96,13 @@ class _TwoLineGridViewState extends ConsumerState<TwoLineGridView> {
         Expanded(
           child: AspectRatio(
             aspectRatio: 1,
-            child: Padding(
-              padding: widget.childPadding ?? EdgeInsets.zero,
-              child: child1,
-            ),
+            child: child1,
           ),
         ),
         Expanded(
           child: AspectRatio(
             aspectRatio: 1,
-            child: Padding(
-              padding: widget.childPadding ?? EdgeInsets.zero,
-              child: child2,
-            ),
+            child: child2,
           ),
         ),
       ],

@@ -8,3 +8,5 @@ const gameListItemHeight = 48.0;
 const systemImageFolderName = 'system_images';
 const gameListFolderName = 'game_list';
 const gameMediaFolderName = 'media';
+
+const dbFileName = 'database.db';

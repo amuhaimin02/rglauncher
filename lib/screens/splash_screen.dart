@@ -26,8 +26,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         initialLabel: 'Loading library...',
         task: (update) async {
           await initializeServices();
-          final systems = await ref.watch(allSystemsProvider.future);
           // services<LibraryManager>().downloadAndStoreSystemImages(systems: systems);
+          await services<LibraryManager>().preloadData();
+
+          final systems = await ref.watch(allSystemsProvider.future);
           await services<LibraryManager>().scanLibrariesFromStorage(
             systems: systems,
             storagePaths: [Directory('/storage/emulated/0/EmuROM')],

@@ -3,16 +3,49 @@ import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
+import 'package:rglauncher/data/database.dart';
 import 'package:rglauncher/features/csv_storage.dart';
 import 'package:rglauncher/features/scraper.dart';
 
 import '../data/models.dart';
 import '../data/typedefs.dart';
+import '../utils/config_loader.dart';
 import 'media_manager.dart';
 import 'services.dart';
 
 class LibraryManager {
   const LibraryManager();
+
+  Future<void> preloadData() async {
+    final db = services<AppDatabase>();
+    final systemConfig = await loadConfigFromAsset('config/systems.toml');
+    final systemList = systemConfig.entries
+        .map((e) => System(
+              name: e.value['name'] as String,
+              code: e.key,
+              producer: e.value['producer'] as String,
+              imageLink: e.value['image'] as String,
+              folderNames: (e.value['folders'] as List).cast<String>(),
+              supportedExtensions:
+                  (e.value['extensions'] as List).cast<String>(),
+            ))
+        .toList();
+
+    await db.systems.addAll(systemList);
+
+    final emulatorConfig = await loadConfigFromAsset('config/emulators.toml');
+    final emulatorList = emulatorConfig.entries
+        .map((e) => Emulator(
+              name: e.value['name'] as String,
+              code: e.key,
+              executable: e.value['executable'] as String,
+              forSystem: e.value['for'] as String,
+              libretroPath: e.value['libretro'] as String?,
+            ))
+        .toList();
+
+    await db.emulators.addAll(emulatorList);
+  }
 
   Future<void> scanLibrariesFromStorage({
     required List<System> systems,

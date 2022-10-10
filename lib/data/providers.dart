@@ -14,6 +14,7 @@ import 'package:rglauncher/utils/extensions.dart';
 
 import '../utils/config_loader.dart';
 import '../widgets/command.dart';
+import 'database.dart';
 
 final routeObserverProvider = Provider((ref) => RouteObserver<PageRoute>());
 
@@ -42,19 +43,15 @@ final commandProvider = StateProvider<List<Command>>((ref) => []);
 
 final allSystemsProvider = FutureProvider(
   (ref) async {
-    final systemConfig = await loadConfigFromAsset('config/systems.toml');
-    return systemConfig.entries
-        .map((e) => System.fromMap({...e.value, 'code': e.key}))
-        .toList();
+    final db = services<AppDatabase>();
+    return db.systems.listAll();
   },
 );
 
 final allEmulatorsProvider = FutureProvider(
   (ref) async {
-    final emulatorConfig = await loadConfigFromAsset('config/emulators.toml');
-    return emulatorConfig.entries
-        .map((e) => Emulator.fromMap({...e.value, 'code': e.key}))
-        .toList();
+    final db = services<AppDatabase>();
+    return db.emulators.listAll();
   },
 );
 

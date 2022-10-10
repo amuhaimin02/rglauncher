@@ -1,94 +1,114 @@
-import 'package:floor/floor.dart';
+// class System {
+//   final String code;
+//
+//   final String name;
+//   final String producer;
+//
+//   final String imageLink;
+//
+//   final List<String> folderNames;
+//
+//   final List<String> supportedExtensions;
+//
+//   const System({
+//     required this.name,
+//     required this.code,
+//     required this.producer,
+//     required this.imageLink,
+//     required this.folderNames,
+//     required this.supportedExtensions,
+//   });
+//
+//   @override
+//   String toString() => 'System: $code';
+// }
+//
+// class Emulator {
+//   final String code;
+//
+//   final String name;
+//
+//   final String executable;
+//
+//   final String forSystem;
+//
+//   final String? libretroPath;
+//
+//   const Emulator({
+//     required this.name,
+//     required this.code,
+//     required this.executable,
+//     required this.forSystem,
+//     this.libretroPath,
+//   });
+//
+//   @override
+//   String toString() => 'Emulator: $code';
+//
+//   bool get isRetroarch => libretroPath != null;
+//
+//   String get androidPackageName =>
+//       executable.substring(0, executable.indexOf('/'));
+//
+//   String get androidComponentName =>
+//       executable.substring(executable.indexOf('/') + 1);
+// }
 
-@Entity(
-  tableName: 'systems',
-)
-class System {
-  @primaryKey
-  final String code;
+import 'package:drift/drift.dart';
 
-  @ColumnInfo(name: 'name')
-  final String name;
+import 'database.dart';
 
-  @ColumnInfo(name: 'producer')
-  final String producer;
+class Systems extends Table {
+  TextColumn get code => text()();
 
-  @ColumnInfo(name: 'image')
-  final String imageLink;
+  TextColumn get name => text()();
 
-  @ColumnInfo(name: 'folders')
-  final List<String> folderNames;
+  TextColumn get producer => text()();
 
-  @ColumnInfo(name: 'extensions')
-  final List<String> supportedExtensions;
+  TextColumn get thumbnailLink => text().named('thumbnail')();
 
-  const System({
-    required this.name,
-    required this.code,
-    required this.producer,
-    required this.imageLink,
-    required this.folderNames,
-    required this.supportedExtensions,
-  });
+  TextColumn get folderNames =>
+      text().named('folders').map(const StringListConverter())();
+
+  TextColumn get supportedExtensions =>
+      text().named('extensions').map(const StringListConverter())();
 
   @override
-  String toString() => 'System: $code';
+  Set<Column<Object>>? get primaryKey => {code};
 }
 
-@Entity(
-  tableName: 'emulators',
-  foreignKeys: [
-    ForeignKey(
-      childColumns: ['system'],
-      parentColumns: ['code'],
-      entity: System,
-    )
-  ],
-)
-class Emulator {
-  @primaryKey
-  final String code;
+class Emulators extends Table {
+  TextColumn get code => text()();
 
-  @ColumnInfo(name: 'name')
-  final String name;
+  TextColumn get name => text()();
 
-  @ColumnInfo(name: 'executable')
-  final String executable;
+  TextColumn get executable => text()();
 
-  @ColumnInfo(name: 'system')
-  final String forSystem;
+  TextColumn get system => text().named('system').references(Systems, #id)();
 
-  @ColumnInfo(name: 'libretro')
-  final String? libretroPath;
-
-  const Emulator({
-    required this.name,
-    required this.code,
-    required this.executable,
-    required this.forSystem,
-    this.libretroPath,
-  });
+  TextColumn get libretroPath => text().named('libretro').nullable()();
 
   @override
-  String toString() => 'Emulator: $code';
-
-  bool get isRetroarch => libretroPath != null;
-
-  String get androidPackageName =>
-      executable.substring(0, executable.indexOf('/'));
-
-  String get androidComponentName =>
-      executable.substring(executable.indexOf('/') + 1);
+  Set<Column<Object>>? get primaryKey => {code};
 }
 
-class Game {
-  final String name;
-  final String filepath;
-  final System system;
+// class Game {
+//   final String name;
+//   final String filepath;
+//   final System system;
+//
+//   const Game({
+//     required this.name,
+//     required this.filepath,
+//     required this.system,
+//   });
+// }
+class Games extends Table {
+  IntColumn get id => integer().autoIncrement()();
 
-  const Game({
-    required this.name,
-    required this.filepath,
-    required this.system,
-  });
+  TextColumn get name => text()();
+
+  TextColumn get filepath => text()();
+
+  TextColumn get system => text().named('system').references(Systems, #id)();
 }

@@ -16,6 +16,7 @@ import 'package:rglauncher/widgets/gamepad_listener.dart';
 import 'package:rglauncher/widgets/launcher_scaffold.dart';
 import 'package:rglauncher/widgets/two_line_grid_view.dart';
 
+import '../data/database.dart';
 import '../data/models.dart';
 import '../utils/navigate.dart';
 import '../widgets/large_clock.dart';

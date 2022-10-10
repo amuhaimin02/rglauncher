@@ -1,18 +1,13 @@
-import 'dart:io';
-
 import 'package:battery_plus/battery_plus.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:device_apps/device_apps.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:rglauncher/data/models.dart';
-import 'package:rglauncher/features/csv_storage.dart';
 import 'package:rglauncher/features/media_manager.dart';
 import 'package:rglauncher/features/notification_manager.dart';
 import 'package:rglauncher/features/services.dart';
 import 'package:rglauncher/utils/extensions.dart';
 
-import '../utils/config_loader.dart';
 import '../widgets/command.dart';
 import 'database.dart';
 
@@ -44,14 +39,14 @@ final commandProvider = StateProvider<List<Command>>((ref) => []);
 final allSystemsProvider = FutureProvider(
   (ref) async {
     final db = services<AppDatabase>();
-    return db.systems.listAll();
+    return db.allSystems();
   },
 );
 
 final allEmulatorsProvider = FutureProvider(
   (ref) async {
     final db = services<AppDatabase>();
-    return db.emulators.listAll();
+    return db.allEmulators();
   },
 );
 
@@ -80,14 +75,16 @@ final scannedSystemProvider = FutureProvider((ref) async {
 
 final gameLibraryProvider =
     FutureProvider.family<List<Game>, System>((ref, system) async {
-  return await services<CsvStorage>().loadCsvFromFile(
-    services<MediaManager>().getGameListFile(system),
-    (line) => Game(
-      name: line[0] as String,
-      filepath: line[1] as String,
-      system: system,
-    ),
-  );
+  final db = services<AppDatabase>();
+  return db.allGamesBySystem(system);
+  // return await services<CsvStorage>().loadCsvFromFile(
+  //   services<MediaManager>().getGameListFile(system),
+  //   (line) => Game(
+  //     name: line[0] as String,
+  //     filepath: line[1] as String,
+  //     system: system,
+  //   ),
+  // );
   // return {
   //   for (final s in systems)
   //     s: await () async {

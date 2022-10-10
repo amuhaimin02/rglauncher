@@ -1,3 +1,4 @@
+import '../data/database.dart';
 import '../data/models.dart';
 
 abstract class Scraper {

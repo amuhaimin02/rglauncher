@@ -8,6 +8,7 @@ import 'package:rglauncher/widgets/loading_widget.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
 import '../data/configs.dart';
+import '../data/database.dart';
 import '../data/models.dart';
 import '../utils/navigate.dart';
 import '../widgets/command.dart';

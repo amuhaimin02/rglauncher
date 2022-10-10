@@ -4,10 +4,8 @@ import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:rglauncher/data/database.dart';
-import 'package:rglauncher/features/csv_storage.dart';
 import 'package:rglauncher/features/scraper.dart';
 
-import '../data/models.dart';
 import '../data/typedefs.dart';
 import '../utils/config_loader.dart';
 import 'media_manager.dart';
@@ -24,14 +22,14 @@ class LibraryManager {
               name: e.value['name'] as String,
               code: e.key,
               producer: e.value['producer'] as String,
-              imageLink: e.value['image'] as String,
+              thumbnailLink: e.value['image'] as String,
               folderNames: (e.value['folders'] as List).cast<String>(),
               supportedExtensions:
                   (e.value['extensions'] as List).cast<String>(),
             ))
         .toList();
 
-    await db.systems.addAll(systemList);
+    await db.updateSystems(systemList);
 
     final emulatorConfig = await loadConfigFromAsset('config/emulators.toml');
     final emulatorList = emulatorConfig.entries
@@ -39,34 +37,43 @@ class LibraryManager {
               name: e.value['name'] as String,
               code: e.key,
               executable: e.value['executable'] as String,
-              forSystem: e.value['for'] as String,
+              system: e.value['for'] as String,
               libretroPath: e.value['libretro'] as String?,
             ))
         .toList();
 
-    await db.emulators.addAll(emulatorList);
+    await db.updateEmulators(emulatorList);
   }
 
   Future<void> scanLibrariesFromStorage({
     required List<System> systems,
     required List<Directory> storagePaths,
   }) async {
-    await compute(
+    final gameList = await compute(
       _doScanLibraryFromStorage,
       {
-        'csvStorage': services<CsvStorage>(),
         'mediaManager': services<MediaManager>(),
         'systems': systems,
         'storagePaths': storagePaths,
       },
     );
+    final db = services<AppDatabase>();
+    await db.refreshGames(gameList
+        .map(
+          (g) => GamesCompanion.insert(
+            name: g.name,
+            filepath: g.filepath,
+            system: g.system,
+          ),
+        )
+        .toList());
   }
 
   Future<void> downloadAndStoreSystemImages(
       {required List<System> systems}) async {
     final manager = services<MediaManager>();
     for (final system in systems) {
-      final imageBytes = await manager.downloadImage(system.imageLink);
+      final imageBytes = await manager.downloadImage(system.thumbnailLink);
       manager.saveSystemImageFile(imageBytes, system);
     }
   }
@@ -114,14 +121,13 @@ Future<void> _doScrapeAndStoreGameImages(JsonMap args) async {
   }
 }
 
-Future<void> _doScanLibraryFromStorage(JsonMap args) async {
+Future<List<Game>> _doScanLibraryFromStorage(JsonMap args) async {
   final systems = args['systems'] as List<System>;
   final storagePaths = args['storagePaths'] as List<Directory>;
-  final storage = args['csvStorage'] as CsvStorage;
   final mediaManager = args['mediaManager'] as MediaManager;
 
   // final status = await Permission.manageExternalStorage.request();
-  final gameLists = <System, List<Game>>{};
+  final gameLists = <Game>[];
   final folderToSystemMap = {
     for (final system in systems)
       for (final folderName in system.folderNames) folderName: system
@@ -132,29 +138,13 @@ Future<void> _doScanLibraryFromStorage(JsonMap args) async {
     for (final folder in folderList) {
       final system = folderToSystemMap[basename(folder.path)];
       if (system != null) {
-        if (gameLists[system] == null) {
-          gameLists[system] = [];
-        }
-        gameLists[system]!.addAll(_doScanDirectoriesForGames(system, folder));
+        gameLists.addAll(
+          _doScanDirectoriesForGames(system, folder),
+        );
       }
     }
   }
-
-  final sortedGameLists = <System, List<Game>>{};
-  for (final system in systems) {
-    if (gameLists[system] != null && gameLists[system]!.isNotEmpty) {
-      // Sort systems based on position
-      sortedGameLists[system] = gameLists[system]!;
-
-      // Sort games based on name
-      sortedGameLists[system]!.sort((a, b) => a.name.compareTo(b.name));
-      storage.saveCsvToFile<Game>(
-        mediaManager.getGameListFile(system),
-        sortedGameLists[system]!,
-        (item) => [item.name, item.filepath],
-      );
-    }
-  }
+  return gameLists;
 }
 
 List<Game> _doScanDirectoriesForGames(
@@ -171,9 +161,10 @@ List<Game> _doScanDirectoriesForGames(
       .whereType<File>()
       .where((file) => matcher.hasMatch(file.path))
       .map((file) => Game(
+    id: 0,
             name: basename(file.path),
             filepath: file.path,
-            system: system,
+            system: system.code,
           ))
       .toList();
 }

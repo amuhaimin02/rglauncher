@@ -10,6 +10,7 @@ import 'package:rglauncher/widgets/loading_widget.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
 import '../data/configs.dart';
+import '../data/database.dart';
 import '../data/providers.dart';
 import '../features/app_launcher.dart';
 import '../features/services.dart';
@@ -442,6 +443,6 @@ class _GameListViewState extends ConsumerState<GameListView> {
     final game = widget.gameList[_currentIndex];
     final emulators = await ref.read(allEmulatorsProvider.future);
     services<AppLauncher>().launchGameUsingEmulator(
-        game, emulators.firstWhere((e) => e.forSystem == game.system.code));
+        game, emulators.firstWhere((e) => e.system == game.system));
   }
 }

@@ -44,10 +44,10 @@ final allSystemsProvider = FutureProvider(
   },
 );
 
-final systemEmulatorsProvider = FutureProvider.family<List<Emulator>, System>(
-  (ref, system) async {
+final systemEmulatorsProvider = FutureProvider.family<List<Emulator>, String>(
+  (ref, systemCode) async {
     final db = services<Database>();
-    return db.allEmulatorsBySystem(system);
+    return db.allEmulatorsBySystemCode(systemCode);
   },
 );
 
@@ -78,30 +78,6 @@ final gameLibraryProvider =
     FutureProvider.family<List<Game>, System>((ref, system) async {
   final db = services<Database>();
   return db.allGamesBySystem(system);
-  // return await services<CsvStorage>().loadCsvFromFile(
-  //   services<MediaManager>().getGameListFile(system),
-  //   (line) => Game(
-  //     name: line[0] as String,
-  //     filepath: line[1] as String,
-  //     system: system,
-  //   ),
-  // );
-  // return {
-  //   for (final s in systems)
-  //     s: await () async {
-  //       try {
-  //         return await services<CsvStorage>().loadCsvFromFile(
-  //           services<MediaManager>().getGameListFile(s),
-  //           (line) => Game(
-  //               name: line[0] as String,
-  //               filepath: line[1] as String,
-  //               system: s),
-  //         );
-  //       } on FileSystemException catch (e) {
-  //         return <Game>[];
-  //       }
-  //     }()
-  // };
 });
 
 final allGamesProvider = FutureProvider((ref) async {
@@ -112,6 +88,36 @@ final allGamesProvider = FutureProvider((ref) async {
     allGames.addAll(systemGames);
   }
   return allGames;
+});
+
+final favoritedGamesProvider = FutureProvider((ref) async {
+  final db = services<Database>();
+  return db.getFavoritedGames();
+});
+
+final wishlistedGamesProvider = FutureProvider((ref) async {
+  final db = services<Database>();
+  return db.getWishlistedGames();
+});
+
+final recentGamesProvider = FutureProvider((ref) async {
+  final db = services<Database>();
+  return db.getRecentGames();
+});
+
+final newlyAddedGamesProvider = FutureProvider((ref) async {
+  final db = services<Database>();
+  return db.getNewlyAddedGames();
+});
+
+final pinnedGamesProvider = FutureProvider((ref) async {
+  final db = services<Database>();
+  return db.getPinnedGames();
+});
+
+final continueGameProvider = FutureProvider((ref) async {
+  final db = services<Database>();
+  return db.getLastPlayedGame();
 });
 
 final currentBackgroundImageProvider =
@@ -125,13 +131,6 @@ final installedAppsProvider = FutureProvider((ref) async {
   );
   appList.shuffle();
   return appList.take(6).cast<ApplicationWithIcon>();
-});
-
-final pinnedGamesProvider = FutureProvider<List<Game>>((ref) async {
-  final systems = await ref.watch(allSystemsProvider.future);
-  final gba = systems.firstWhere((s) => s.code == 'GBA');
-  final library = await ref.watch(gameLibraryProvider(gba).future);
-  return library.take(4).toList();
 });
 
 final notificationProvider =

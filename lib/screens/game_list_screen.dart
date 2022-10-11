@@ -84,6 +84,63 @@ class SingleGameListScreen extends StatelessWidget {
   }
 }
 
+class FavoritedGameListScreen extends ConsumerWidget {
+  const FavoritedGameListScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final favoritedGames = ref.watch(favoritedGamesProvider);
+    return favoritedGames.when(
+      data: (list) => SingleGameListScreen(title: 'Favorite', gameList: list),
+      error: (e, s) => Text(e.toString()),
+      loading: () => const LoadingSpinner(),
+    );
+  }
+}
+
+class WishlistedGamesListScreen extends ConsumerWidget {
+  const WishlistedGamesListScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final wishlistedGames = ref.watch(wishlistedGamesProvider);
+    return wishlistedGames.when(
+      data: (list) => SingleGameListScreen(title: 'Wishlist', gameList: list),
+      error: (e, s) => Text(e.toString()),
+      loading: () => const LoadingSpinner(),
+    );
+  }
+}
+
+class RecentGameListScreen extends ConsumerWidget {
+  const RecentGameListScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final recentGames = ref.watch(recentGamesProvider);
+    return recentGames.when(
+      data: (list) => SingleGameListScreen(title: 'Recent', gameList: list),
+      error: (e, s) => Text(e.toString()),
+      loading: () => const LoadingSpinner(),
+    );
+  }
+}
+
+class NewlyAddedListScreen extends ConsumerWidget {
+  const NewlyAddedListScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final newGames = ref.watch(newlyAddedGamesProvider);
+    return newGames.when(
+      data: (list) =>
+          SingleGameListScreen(title: 'Newly added', gameList: list),
+      error: (e, s) => Text(e.toString()),
+      loading: () => const LoadingSpinner(),
+    );
+  }
+}
+
 // class GameBackground extends ConsumerWidget {
 //   const GameBackground({Key? key}) : super(key: key);
 //
@@ -384,14 +441,25 @@ class _GameListViewState extends ConsumerState<GameListView> {
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           alignment: AlignmentDirectional.centerStart,
                           height: gameListItemHeight,
-                          child: Text(
-                            widget.gameList[index].name,
-                            style: textTheme.bodyLarge!.copyWith(
-                              color: index == _currentIndex
-                                  ? Colors.black
-                                  : Colors.white,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  widget.gameList[index].name,
+                                  style: textTheme.bodyLarge!.copyWith(
+                                    color: index == _currentIndex
+                                        ? Colors.black
+                                        : Colors.white,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (widget.gameList[index].isFavorite)
+                                const Icon(
+                                  Icons.favorite,
+                                  color: Colors.red,
+                                )
+                            ],
                           ),
                         ),
                       ),
@@ -441,8 +509,8 @@ class _GameListViewState extends ConsumerState<GameListView> {
 
   void _onItemSelected(BuildContext context) async {
     final game = widget.gameList[_currentIndex];
-    final system = await services<Database>().getSystemForGame(game);
-    final emulators = await ref.read(systemEmulatorsProvider(system!).future);
+    final emulators =
+        await ref.read(systemEmulatorsProvider(game.systemCode).future);
     services<AppLauncher>().launchGameUsingEmulator(
       game,
       emulators.first,

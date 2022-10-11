@@ -10,3 +10,4 @@ const gameListFolderName = 'game_list';
 const gameMediaFolderName = 'media';
 
 const dbFileName = 'database.db';
+const daysConsideredRecent = 7;

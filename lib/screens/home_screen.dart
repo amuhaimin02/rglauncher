@@ -1,4 +1,3 @@
-import 'package:collection/collection.dart';
 import 'package:device_apps/device_apps.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -16,8 +15,8 @@ import 'package:rglauncher/widgets/gamepad_listener.dart';
 import 'package:rglauncher/widgets/launcher_scaffold.dart';
 import 'package:rglauncher/widgets/two_line_grid_view.dart';
 
-import '../data/database.dart';
 import '../data/models.dart';
+import '../features/app_launcher.dart';
 import '../utils/navigate.dart';
 import '../widgets/large_clock.dart';
 import 'game_list_screen.dart';
@@ -48,6 +47,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     final allApps = ref.watch(installedAppsProvider);
     final pinnedGames = ref.watch(pinnedGamesProvider);
+    final continueGame = ref.watch(continueGameProvider);
 
     return WillPopScope(
       onWillPop: () async => false,
@@ -135,14 +135,36 @@ class _HomePageState extends ConsumerState<HomePage> {
                 child: LargeClock(),
               ),
               const TwoLineDivider(),
-              const TwoLineGridItem(
-                large: true,
-                aspectRatio: 0.6,
-                child: MenuTile(
-                  label: 'Continue',
-                  icon: Icons.play_circle_rounded,
-                  image: NetworkImage('https://picsum.photos/400/400'),
+              continueGame.when(
+                error: (error, stack) => const TwoLineGridItem(
+                  large: true,
+                  aspectRatio: 0.6,
+                  child: LoadingTile(),
                 ),
+                loading: () => const TwoLineGridItem(
+                  large: true,
+                  aspectRatio: 0.6,
+                  child: LoadingTile(),
+                ),
+                data: (game) {
+                  return TwoLineGridItem(
+                    large: true,
+                    aspectRatio: 0.6,
+                    child: const MenuTile(
+                      label: 'Continue',
+                      icon: Icons.play_circle_rounded,
+                      image: NetworkImage('https://picsum.photos/400/400'),
+                    ),
+                    onTap: () async {
+                      final emulators = await ref.read(
+                          systemEmulatorsProvider(game!.systemCode).future);
+                      services<AppLauncher>().launchGameUsingEmulator(
+                        game,
+                        emulators.first,
+                      );
+                    },
+                  );
+                },
               ),
               ...pinnedGames.when(
                 error: (error, stack) => [],
@@ -155,13 +177,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                       TwoLineGridItem(
                         child: GameTile(game: game),
                         onTap: () async {
-                          // final emulator =
-                          //     await ref.read(allEmulatorsProvider.future);
-                          // launchGameUsingEmulator(
-                          //   game,
-                          //   emulator.firstWhere(
-                          //       (e) => e.forSystem == game.system.code),
-                          // );
+                          final emulators = await ref.read(
+                              systemEmulatorsProvider(game.systemCode).future);
+                          services<AppLauncher>().launchGameUsingEmulator(
+                            game,
+                            emulators.first,
+                          );
                         },
                       )
                   ];
@@ -172,28 +193,32 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
               const TwoLineDivider(),
               TwoLineGridItem(
-                onTap: () => _openSingleListScreen(context, 'Favorites'),
+                onTap: () =>
+                    Navigate.to((context) => const FavoritedGameListScreen()),
                 child: const MenuTile(
                   label: 'Favorites',
                   icon: Icons.favorite_rounded,
                 ),
               ),
               TwoLineGridItem(
-                onTap: () => _openSingleListScreen(context, 'Recent'),
+                onTap: () =>
+                    Navigate.to((context) => const RecentGameListScreen()),
                 child: const MenuTile(
                   label: 'Recent',
                   icon: Icons.history_rounded,
                 ),
               ),
               TwoLineGridItem(
-                onTap: () => _openSingleListScreen(context, 'Wishlist'),
+                onTap: () =>
+                    Navigate.to((context) => const WishlistedGamesListScreen()),
                 child: const MenuTile(
                   label: 'Wishlist',
                   icon: Icons.bookmark_rounded,
                 ),
               ),
               TwoLineGridItem(
-                onTap: () => _openSingleListScreen(context, 'New'),
+                onTap: () =>
+                    Navigate.to((context) => const NewlyAddedListScreen()),
                 child: const MenuTile(
                   label: 'New',
                   icon: Icons.auto_awesome_rounded,

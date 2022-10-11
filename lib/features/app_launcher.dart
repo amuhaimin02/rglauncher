@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:android_intent_plus/flag.dart';
+import 'package:rglauncher/features/services.dart';
 
 import '../data/database.dart';
 import '../data/models.dart';
@@ -11,10 +12,11 @@ class AppLauncher {
   const AppLauncher();
 
   Future<void> launchGameUsingEmulator(Game game, Emulator emulator) async {
-    // final result = await AndroidFunctions.runShell(
-    //     'am start -n org.ppsspp.ppsspp/.PpssppActivity');
-    // print(result);
-    // return;
+    final db = services<Database>();
+    db.toggleFavorite(game);
+    db.updateLastPlayed(game);
+    db.pinGame(game, 0);
+
     if (Platform.isAndroid) {
       final intent = AndroidIntent(
         action: emulator.isRetroarch ? 'action_main' : 'action_view',

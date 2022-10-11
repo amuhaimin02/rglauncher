@@ -69,6 +69,13 @@ final selectedGameProvider = FutureProvider((ref) async {
   return library.get(index);
 });
 
+final selectedGameMetadataProvider = FutureProvider((ref) async {
+  final db = services<Database>();
+  final game = await ref.watch(selectedGameProvider.future);
+  if (game == null) return null;
+  return db.getMetadataForGame(game);
+});
+
 final scannedSystemProvider = FutureProvider((ref) async {
   final database = services<Database>();
   return database.scannedSystems();

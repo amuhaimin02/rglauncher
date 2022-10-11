@@ -1,5 +1,5 @@
 import 'package:isar/isar.dart';
-
+import 'package:path/path.dart' as path;
 part 'models.g.dart';
 
 @collection
@@ -63,6 +63,8 @@ class Game {
   @Index()
   late String name;
 
+  late String filename;
+
   late String filepath;
 
   @Index()
@@ -79,4 +81,21 @@ class Game {
 
   @Index()
   int? pinIndex;
+
+  @ignore
+  String get fullpath => path.join(filepath, filename);
+}
+
+@collection
+class GameMetadata {
+  Id id = Isar.autoIncrement;
+
+  @Index(unique: true, replace: true)
+  late String key;
+
+  late String title;
+
+  late String description;
+
+  late String genre;
 }

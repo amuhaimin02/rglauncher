@@ -3,9 +3,10 @@ import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:rglauncher/data/database.dart';
 import 'package:rglauncher/features/scraper.dart';
-import 'package:permission_handler/permission_handler.dart';
+
 import '../data/models.dart';
 import '../data/typedefs.dart';
 import '../utils/config_loader.dart';
@@ -44,7 +45,7 @@ class LibraryManager {
 
     await db.updateEmulators(emulatorList);
 
-    // await downloadAndStoreSystemImages(systems: systemList);
+    await downloadAndStoreSystemImages(systems: systemList);
   }
 
   Future<void> scanLibrariesFromStorage({
@@ -68,11 +69,11 @@ class LibraryManager {
   }
 
   Future<void> scrapeAndStoreGameImages({
-    required Function(int index)? progress,
+    required Function(String gameFileName)? progress,
   }) async {
     final progressPort = ReceivePort();
     progressPort.listen((message) {
-      progress?.call(message as int);
+      progress?.call(message as String);
     });
     await compute(
       _doScrapeAndStoreGameImages,
@@ -90,18 +91,20 @@ class LibraryManager {
 Future<void> _doScrapeAndStoreGameImages(JsonMap args) async {
   final manager = args['mediaManager'] as MediaManager;
   final progressPort = args['progressPort'] as SendPort;
-  final database = await Database.open();
-  final games = await database.allGames();
+  final db = await Database.open(temporary: true);
+  final games = await db.allGames();
 
   int gameProcessed = 0;
   final scraper = DummyScraper();
   for (final game in games) {
-    progressPort.send(gameProcessed++);
+    progressPort.send(game.filename);
     // progress?.call(game);
 
     if (!manager.isGameMediaFileExists(game)) {
-      final imageLink = scraper.getBoxArtImageLink(game);
+      final imageLink = await scraper.getBoxArtImageLink(game);
+      final meta = await scraper.getGameMetadata(game);
       final imageBytes = await manager.downloadImage(imageLink);
+      await db.storeGameMetadata(game, meta);
       manager.saveGameMediaFile(imageBytes, game);
     } else {
       // Skipping
@@ -111,7 +114,7 @@ Future<void> _doScrapeAndStoreGameImages(JsonMap args) async {
 
 Future<void> _doScanLibraryFromStorage(JsonMap args) async {
   final storagePaths = args['storagePaths'] as List<Directory>;
-  final database = await Database.open();
+  final database = await Database.open(temporary: true);
   final systems = await database.allSystems();
 
   final gameLists = <Game>[];
@@ -150,7 +153,8 @@ List<Game> _doScanDirectoriesForGames(
       .where((file) => matcher.hasMatch(file.path))
       .map((file) => Game()
         ..name = basename(file.path)
-        ..filepath = file.path
+        ..filename = basename(file.path)
+        ..filepath = file.parent.path
         ..systemCode = system.code)
       .toList();
 }

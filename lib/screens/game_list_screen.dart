@@ -270,6 +270,7 @@ class GameDetailPane extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedGame = ref.watch(selectedGameProvider);
+    final gameMetadata = ref.watch(selectedGameMetadataProvider);
     return Center(
       child: Container(
         padding: const EdgeInsets.all(32),
@@ -286,35 +287,62 @@ class GameDetailPane extends ConsumerWidget {
               borderRadius: BorderRadius.circular(16),
               clipBehavior: Clip.antiAlias,
               color: Colors.grey.shade800,
-              child: selectedGame.when(
-                data: (game) {
-                  if (game != null) {
-                    return ImageWithStatus(
-                      image: FileImage(
-                        services<MediaManager>().getGameMediaFile(game),
-                      ),
-                    );
-                  } else {
-                    return Container(
-                      width: 240,
-                      height: 230,
-                      alignment: Alignment.center,
-                      child: const Text('No game'),
-                    );
-                  }
-                },
-                error: (error, stack) {
-                  return Container(
-                    width: 240,
-                    height: 230,
-                    alignment: Alignment.center,
-                    child: const Text('Error'),
-                  );
-                },
-                loading: () => const SizedBox(
-                  width: 120,
-                  height: 120,
-                ),
+              child: Stack(
+                children: [
+                  selectedGame.when(
+                    data: (game) {
+                      if (game != null) {
+                        return ImageWithStatus(
+                          image: FileImage(
+                            services<MediaManager>().getGameMediaFile(game),
+                          ),
+                        );
+                      } else {
+                        return Container(
+                          width: 240,
+                          height: 230,
+                          alignment: Alignment.center,
+                          child: const Text('No game'),
+                        );
+                      }
+                    },
+                    error: (error, stack) {
+                      return Container(
+                        width: 240,
+                        height: 230,
+                        alignment: Alignment.center,
+                        child: const Text('Error'),
+                      );
+                    },
+                    loading: () => const SizedBox(
+                      width: 120,
+                      height: 120,
+                    ),
+                  ),
+                  gameMetadata.when(
+                    data: (meta) {
+                      final textTheme = Theme.of(context).textTheme;
+                      return Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(meta?.title ?? 'No title',
+                                style: textTheme.headlineSmall),
+                            Text(meta?.description ?? 'No meta',
+                                style: textTheme.bodyMedium),
+                            const SizedBox(height: 8),
+                            Text(meta?.genre ?? 'No genre',
+                                style: textTheme.bodySmall),
+                          ],
+                        ),
+                      );
+                    },
+                    error: (e, s) => Text(e.toString()),
+                    loading: () => LoadingSpinner(),
+                  ),
+                ],
               ),
             ),
           ),
@@ -339,16 +367,9 @@ class GameListView extends ConsumerStatefulWidget {
 class _GameListViewState extends ConsumerState<GameListView> {
   final _controller = ClickyListScrollController();
 
-  int _currentIndex = 0;
-
   @override
   Widget build(BuildContext context) {
     ref.listen(selectedGameListIndexProvider, (prevIndex, newIndex) {
-      // _scrollController.animateTo(
-      //   newIndex * gameListItemHeight,
-      //   duration: defaultAnimationDuration,
-      //   curve: defaultAnimationCurve,
-      // );
       _controller.jumpToIndex(newIndex);
     });
 
@@ -358,7 +379,7 @@ class _GameListViewState extends ConsumerState<GameListView> {
         Command(
           button: CommandButton.a,
           label: 'Open',
-          onTap: () => _onItemSelected(context),
+          onTap: () => _onItemSelected(context, _controller.currentIndex),
         ),
         Command(
           button: CommandButton.b,
@@ -401,13 +422,12 @@ class _GameListViewState extends ConsumerState<GameListView> {
           _controller.goNextBy(10);
         },
         onA: () {
-          _onItemSelected(context);
+          _onItemSelected(context, _controller.currentIndex);
         },
         child: ClickyListView(
           controller: _controller,
           sideGap: 12,
           listItemSize: gameListItemHeight,
-          initialIndex: 1,
           itemCount: widget.gameList.length,
           itemBuilder: (context, index, selected) {
             return GameListTile(
@@ -420,44 +440,6 @@ class _GameListViewState extends ConsumerState<GameListView> {
             ref.read(selectedGameListIndexProvider.state).state = index;
           },
         ),
-        // child: NotificationListener<ScrollNotification>(
-        //   onNotification: (scrollInfo) {
-        //     if (scrollInfo is ScrollUpdateNotification) {
-        //       final computedIndex =
-        //           (scrollInfo.metrics.pixels / gameListItemHeight).round();
-        //       _softSetIndex(computedIndex);
-        //       return true;
-        //     } else if (scrollInfo is UserScrollNotification) {
-        //       final computedIndex =
-        //           (scrollInfo.metrics.pixels / gameListItemHeight).round();
-        //       _hardSetIndex(computedIndex);
-        //       return true;
-        //     }
-        //     return false;
-        //   },
-        //   child: LayoutBuilder(
-        //     builder: (context, constraints) {
-        //       final widgetHeight = constraints.maxHeight;
-        //       return FadingEdge(
-        //         direction: Axis.vertical,
-        //         fadingEdgeSize: 100,
-        //         child: ListView.builder(
-        //           padding: const EdgeInsets.all(12.0) +
-        //               EdgeInsets.symmetric(vertical: widgetHeight / 2.5),
-        //           controller: _scrollController,
-        //           itemCount: widget.gameList.length,
-        //           itemBuilder: (context, index) {
-        //             return GameListTile(
-        //               onTap: () => _onListTap(context, index),
-        //               selected: index == _currentIndex,
-        //               game: widget.gameList[index],
-        //             );
-        //           },
-        //         ),
-        //       );
-        //     },
-        //   ),
-        // ),
       ),
     );
   }
@@ -465,14 +447,14 @@ class _GameListViewState extends ConsumerState<GameListView> {
   void _onListTap(BuildContext context, int index) {
     final currentIndex = ref.read(selectedGameListIndexProvider);
     if (currentIndex == index) {
-      _onItemSelected(context);
+      _onItemSelected(context, index);
     } else {
       ref.read(selectedGameListIndexProvider.state).state = index;
     }
   }
 
-  void _onItemSelected(BuildContext context) async {
-    final game = widget.gameList[_currentIndex];
+  void _onItemSelected(BuildContext context, int index) async {
+    final game = widget.gameList[index];
     final emulators =
         await ref.read(systemEmulatorsProvider(game.systemCode).future);
     services<AppLauncher>().launchGameUsingEmulator(

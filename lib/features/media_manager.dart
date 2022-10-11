@@ -35,9 +35,7 @@ class MediaManager {
   }
 
   File getGameMediaFile(Game game) {
-    final gameFile = File(game.filepath);
-    return File(
-        '${gameFile.parent.path}/$gameMediaFolderName/${basename(gameFile.path)}.png');
+    return File('${game.filepath}/$gameMediaFolderName/${game.filename}.png');
   }
 
   bool isGameMediaFileExists(Game game) {

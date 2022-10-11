@@ -90,18 +90,7 @@ class SystemPageView extends ConsumerStatefulWidget {
 }
 
 class _SystemPageViewState extends ConsumerState<SystemPageView> {
-  late final _pageController = PageController(
-    viewportFraction: _calculateViewportFraction(),
-    initialPage: ref.watch(selectedSystemIndexProvider),
-  );
-
   late final _controller = ClickyListScrollController();
-
-  double _calculateViewportFraction() {
-    final screenSize = MediaQuery.of(context).size;
-    final viewportFraction = screenSize.height / screenSize.width;
-    return viewportFraction * 0.5;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -109,11 +98,6 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
     final scannedSystems = ref.watch(scannedSystemProvider);
 
     ref.listen(selectedSystemIndexProvider, (prevIndex, newIndex) {
-      // _pageController.animateToPage(
-      //   newIndex,
-      //   duration: defaultAnimationDuration,
-      //   curve: defaultAnimationCurve,
-      // );
       _controller.jumpToIndex(newIndex);
     });
 
@@ -147,20 +131,6 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
                   ref.read(selectedSystemIndexProvider.state).state = index;
                 },
               ),
-              // child: PageView(
-              //   controller: _pageController,
-              //   children: [
-              //     for (int i = 0; i < systems.length; i++)
-              //       SystemItemTile(
-              //         selected: currentSystemIndex == i,
-              //         onTap: () => _openGameListScreen(context, i),
-              //         system: systems[i],
-              //       ),
-              //   ],
-              //   onPageChanged: (index) {
-              //     ref.read(selectedSystemIndexProvider.state).state = index;
-              //   },
-              // ),
             ),
             const Spacer(flex: 2)
           ],

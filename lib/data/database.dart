@@ -12,10 +12,11 @@ class Database {
     SystemSchema,
     EmulatorSchema,
     GameSchema,
+    GameMetadataSchema,
   ];
 
-  static Future<Database> open() async {
-    return Database._(await Isar.open(_schema));
+  static Future<Database> open({bool temporary = false}) async {
+    return Database._(await Isar.open(_schema, inspector: !temporary));
   }
 
   Future<void> updateSystems(List<System> systemList) async {
@@ -94,6 +95,18 @@ class Database {
       game.pinIndex = null;
       _isar.games.put(game);
     });
+  }
+
+  Future<void> storeGameMetadata(Game game, GameMetadata meta) async {
+    await _isar.writeTxn(() async {
+      await _isar.gameMetadatas.put(
+        meta..key = game.filename,
+      );
+    });
+  }
+
+  Future<GameMetadata?> getMetadataForGame(Game game) async {
+    return _isar.gameMetadatas.getByKey(game.filename);
   }
 
   Future<List<Emulator>> allEmulatorsBySystemCode(String systemCode) async {

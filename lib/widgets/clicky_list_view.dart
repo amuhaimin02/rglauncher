@@ -37,7 +37,7 @@ class _ClickyListViewState extends State<ClickyListView> {
     widget.controller?._addState(this);
   }
 
-  late int _currentIndex = widget.initialIndex;
+  late int currentIndex = widget.initialIndex;
 
   late final _scrollController = ScrollController(
     initialScrollOffset: widget.initialIndex * widget.listItemSize,
@@ -87,8 +87,8 @@ class _ClickyListViewState extends State<ClickyListView> {
                   height: widget.scrollDirection == Axis.vertical
                       ? widget.listItemSize
                       : null,
-                  child: widget.itemBuilder(
-                      context, index, index == _currentIndex),
+                  child:
+                      widget.itemBuilder(context, index, index == currentIndex),
                 ),
               ),
               // Container(
@@ -103,7 +103,7 @@ class _ClickyListViewState extends State<ClickyListView> {
   }
 
   void _softSetIndex(int newIndex, {bool animate = false}) {
-    if (_currentIndex == newIndex) return;
+    if (currentIndex == newIndex) return;
     newIndex = newIndex.clamp(0, widget.itemCount - 1);
 
     if (animate) {
@@ -114,14 +114,14 @@ class _ClickyListViewState extends State<ClickyListView> {
       );
     }
     setState(() {
-      _currentIndex = newIndex;
+      currentIndex = newIndex;
     });
   }
 
   void _hardSetIndex(int newIndex) {
     newIndex = newIndex.clamp(0, widget.itemCount - 1);
     setState(() {
-      _currentIndex = newIndex;
+      currentIndex = newIndex;
     });
     _reposition(newIndex);
     widget.onChanged(newIndex);
@@ -146,7 +146,7 @@ class _ClickyListViewState extends State<ClickyListView> {
   }
 
   void jumpBy(int delta, bool fast) {
-    final newIndex = (_currentIndex + delta).clamp(0, widget.itemCount - 1);
+    final newIndex = (currentIndex + delta).clamp(0, widget.itemCount - 1);
     if (fast) {
       _softSetIndex(newIndex, animate: true);
     } else {
@@ -173,4 +173,6 @@ class ClickyListScrollController {
   void goNextBy(int delta, {bool fast = false}) {
     _state?.jumpBy(delta, fast);
   }
+
+  int get currentIndex => _state?.currentIndex ?? 0;
 }

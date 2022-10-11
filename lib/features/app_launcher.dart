@@ -31,7 +31,7 @@ class AppLauncher {
         ],
         arguments: emulator.isRetroarch
             ? {
-                'ROM': File(game.filepath).absolute.path,
+                'ROM': File(game.fullpath).absolute.path,
                 'LIBRETRO': emulator.libretroPath,
                 'CONFIGFILE':
                     '/storage/emulated/0/Android/data/com.retroarch.aarch64/files/retroarch.cfg',
@@ -40,7 +40,7 @@ class AppLauncher {
             : null,
         data: !emulator.isRetroarch
             ? await AndroidFunctions.convertUriToContentPath(
-                File(game.filepath).path)
+                File(game.fullpath).path)
             : null,
       );
       await intent.launch();

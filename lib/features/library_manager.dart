@@ -5,7 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:rglauncher/data/database.dart';
 import 'package:rglauncher/features/scraper.dart';
-
+import 'package:permission_handler/permission_handler.dart';
+import '../data/models.dart';
 import '../data/typedefs.dart';
 import '../utils/config_loader.dart';
 import 'media_manager.dart';
@@ -15,58 +16,46 @@ class LibraryManager {
   const LibraryManager();
 
   Future<void> preloadData() async {
-    final db = services<AppDatabase>();
+    final status = await Permission.manageExternalStorage.request();
+
+    final db = services<Database>();
     final systemConfig = await loadConfigFromAsset('config/systems.toml');
     final systemList = systemConfig.entries
-        .map((e) => System(
-              name: e.value['name'] as String,
-              code: e.key,
-              producer: e.value['producer'] as String,
-              thumbnailLink: e.value['image'] as String,
-              folderNames: (e.value['folders'] as List).cast<String>(),
-              supportedExtensions:
-                  (e.value['extensions'] as List).cast<String>(),
-            ))
+        .map((e) => System()
+          ..name = e.value['name'] as String
+          ..code = e.key
+          ..producer = e.value['producer'] as String
+          ..thumbnailLink = e.value['image'] as String
+          ..folderNames = (e.value['folders'] as List).cast<String>()
+          ..extensions = (e.value['extensions'] as List).cast<String>())
         .toList();
 
     await db.updateSystems(systemList);
 
     final emulatorConfig = await loadConfigFromAsset('config/emulators.toml');
     final emulatorList = emulatorConfig.entries
-        .map((e) => Emulator(
-              name: e.value['name'] as String,
-              code: e.key,
-              executable: e.value['executable'] as String,
-              system: e.value['for'] as String,
-              libretroPath: e.value['libretro'] as String?,
-            ))
+        .map((e) => Emulator()
+          ..name = e.value['name'] as String
+          ..code = e.key
+          ..executable = e.value['executable'] as String
+          ..systemCode = e.value['for']
+          ..libretroPath = e.value['libretro'] as String?)
         .toList();
 
     await db.updateEmulators(emulatorList);
+
+    // await downloadAndStoreSystemImages(systems: systemList);
   }
 
   Future<void> scanLibrariesFromStorage({
-    required List<System> systems,
     required List<Directory> storagePaths,
   }) async {
-    final gameList = await compute(
+    return await compute(
       _doScanLibraryFromStorage,
       {
-        'mediaManager': services<MediaManager>(),
-        'systems': systems,
         'storagePaths': storagePaths,
       },
     );
-    final db = services<AppDatabase>();
-    await db.refreshGames(gameList
-        .map(
-          (g) => GamesCompanion.insert(
-            name: g.name,
-            filepath: g.filepath,
-            system: g.system,
-          ),
-        )
-        .toList());
   }
 
   Future<void> downloadAndStoreSystemImages(
@@ -79,7 +68,6 @@ class LibraryManager {
   }
 
   Future<void> scrapeAndStoreGameImages({
-    required List<Game> games,
     required Function(int index)? progress,
   }) async {
     final progressPort = ReceivePort();
@@ -90,7 +78,6 @@ class LibraryManager {
       _doScrapeAndStoreGameImages,
       {
         'mediaManager': services<MediaManager>(),
-        'games': games,
         'progressPort': progressPort.sendPort,
       },
     );
@@ -101,9 +88,10 @@ class LibraryManager {
 // Isolate-based tasks
 
 Future<void> _doScrapeAndStoreGameImages(JsonMap args) async {
-  final games = args['games'] as List<Game>;
   final manager = args['mediaManager'] as MediaManager;
   final progressPort = args['progressPort'] as SendPort;
+  final database = await Database.open();
+  final games = await database.allGames();
 
   int gameProcessed = 0;
   final scraper = DummyScraper();
@@ -121,12 +109,11 @@ Future<void> _doScrapeAndStoreGameImages(JsonMap args) async {
   }
 }
 
-Future<List<Game>> _doScanLibraryFromStorage(JsonMap args) async {
-  final systems = args['systems'] as List<System>;
+Future<void> _doScanLibraryFromStorage(JsonMap args) async {
   final storagePaths = args['storagePaths'] as List<Directory>;
-  final mediaManager = args['mediaManager'] as MediaManager;
+  final database = await Database.open();
+  final systems = await database.allSystems();
 
-  // final status = await Permission.manageExternalStorage.request();
   final gameLists = <Game>[];
   final folderToSystemMap = {
     for (final system in systems)
@@ -134,7 +121,7 @@ Future<List<Game>> _doScanLibraryFromStorage(JsonMap args) async {
   };
 
   for (final path in storagePaths) {
-    final folderList = path.listSync(recursive: true).whereType<Directory>();
+    final folderList = path.listSync().whereType<Directory>();
     for (final folder in folderList) {
       final system = folderToSystemMap[basename(folder.path)];
       if (system != null) {
@@ -144,7 +131,8 @@ Future<List<Game>> _doScanLibraryFromStorage(JsonMap args) async {
       }
     }
   }
-  return gameLists;
+
+  await database.refreshGames(gameLists);
 }
 
 List<Game> _doScanDirectoriesForGames(
@@ -152,7 +140,7 @@ List<Game> _doScanDirectoriesForGames(
   Directory directory,
 ) {
   final matcher = RegExp(
-    '(${system.supportedExtensions.join('|')})\$',
+    '(${system.extensions.join('|')})\$',
     caseSensitive: false,
   );
 
@@ -160,11 +148,9 @@ List<Game> _doScanDirectoriesForGames(
       .listSync(recursive: true)
       .whereType<File>()
       .where((file) => matcher.hasMatch(file.path))
-      .map((file) => Game(
-    id: 0,
-            name: basename(file.path),
-            filepath: file.path,
-            system: system.code,
-          ))
+      .map((file) => Game()
+        ..name = basename(file.path)
+        ..filepath = file.path
+        ..systemCode = system.code)
       .toList();
 }

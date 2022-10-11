@@ -10,6 +10,7 @@ import 'package:rglauncher/utils/extensions.dart';
 
 import '../widgets/command.dart';
 import 'database.dart';
+import 'models.dart';
 
 final routeObserverProvider = Provider((ref) => RouteObserver<PageRoute>());
 
@@ -38,15 +39,15 @@ final commandProvider = StateProvider<List<Command>>((ref) => []);
 
 final allSystemsProvider = FutureProvider(
   (ref) async {
-    final db = services<AppDatabase>();
+    final db = services<Database>();
     return db.allSystems();
   },
 );
 
-final allEmulatorsProvider = FutureProvider(
-  (ref) async {
-    final db = services<AppDatabase>();
-    return db.allEmulators();
+final systemEmulatorsProvider = FutureProvider.family<List<Emulator>, System>(
+  (ref, system) async {
+    final db = services<Database>();
+    return db.allEmulatorsBySystem(system);
   },
 );
 
@@ -69,13 +70,13 @@ final selectedGameProvider = FutureProvider((ref) async {
 });
 
 final scannedSystemProvider = FutureProvider((ref) async {
-  final system = await ref.watch(allSystemsProvider.future);
-  return services<MediaManager>().getSavedGameList(system);
+  final database = services<Database>();
+  return database.scannedSystems();
 });
 
 final gameLibraryProvider =
     FutureProvider.family<List<Game>, System>((ref, system) async {
-  final db = services<AppDatabase>();
+  final db = services<Database>();
   return db.allGamesBySystem(system);
   // return await services<CsvStorage>().loadCsvFromFile(
   //   services<MediaManager>().getGameListFile(system),

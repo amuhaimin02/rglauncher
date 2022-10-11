@@ -2,15 +2,15 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rglauncher/data/database.dart';
 import 'package:rglauncher/data/models.dart';
 import 'package:rglauncher/features/media_manager.dart';
 import 'package:rglauncher/widgets/fading_edge.dart';
 import 'package:rglauncher/widgets/launcher_scaffold.dart';
-import 'package:rglauncher/widgets/loading_widget.dart';
+import 'package:rglauncher/widgets/loading_spinner.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
 import '../data/configs.dart';
-import '../data/database.dart';
 import '../data/providers.dart';
 import '../features/app_launcher.dart';
 import '../features/services.dart';
@@ -185,7 +185,7 @@ class _GameListContentState extends ConsumerState<GameListContent> {
                                 gameList: snapshot.data!,
                               );
                             } else {
-                              return const LoadingWidget();
+                              return const LoadingSpinner();
                             }
                           }()),
                         ],
@@ -254,7 +254,7 @@ class GameDetailPane extends ConsumerWidget {
                     child: const Text('Error'),
                   );
                 },
-                loading: () => Container(
+                loading: () => const SizedBox(
                   width: 120,
                   height: 120,
                 ),
@@ -441,8 +441,11 @@ class _GameListViewState extends ConsumerState<GameListView> {
 
   void _onItemSelected(BuildContext context) async {
     final game = widget.gameList[_currentIndex];
-    final emulators = await ref.read(allEmulatorsProvider.future);
+    final system = await services<Database>().getSystemForGame(game);
+    final emulators = await ref.read(systemEmulatorsProvider(system!).future);
     services<AppLauncher>().launchGameUsingEmulator(
-        game, emulators.firstWhere((e) => e.system == game.system));
+      game,
+      emulators.first,
+    );
   }
 }

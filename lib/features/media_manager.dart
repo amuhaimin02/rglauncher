@@ -26,21 +26,6 @@ class MediaManager {
     return File('$appDirPath/$gameListFolderName/${system.code}.csv');
   }
 
-  List<System> getSavedGameList(List<System> allSystem) {
-    final folder = Directory('$appDirPath/$gameListFolderName');
-    final allSystemFiles = {
-      for (final s in allSystem) s: getGameListFile(s),
-    };
-    final folderFiles = folder.listSync().map((e) => e.path).toList();
-    List<System> foundSystem = [];
-    for (final f in allSystemFiles.entries) {
-      if (folderFiles.contains(f.value.path)) {
-        foundSystem.add(f.key);
-      }
-    }
-    return foundSystem;
-  }
-
   void saveSystemImageFile(Uint8List bytes, System system) {
     final imageFile = getSystemImageFile(system);
     if (!imageFile.existsSync()) {

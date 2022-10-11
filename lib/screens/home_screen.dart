@@ -66,7 +66,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                   final allGames = await ref.read(allGamesProvider.future);
                   final totalGames = allGames.length;
                   await services<LibraryManager>().scrapeAndStoreGameImages(
-                    games: allGames,
                     progress: (index) {
                       update(
                         'Scraping ${allGames[index].name}',

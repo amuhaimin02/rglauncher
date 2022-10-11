@@ -4,11 +4,10 @@ import 'package:rglauncher/data/providers.dart';
 import 'package:rglauncher/features/media_manager.dart';
 import 'package:rglauncher/features/services.dart';
 import 'package:rglauncher/screens/game_list_screen.dart';
-import 'package:rglauncher/widgets/loading_widget.dart';
+import 'package:rglauncher/widgets/loading_spinner.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
 import '../data/configs.dart';
-import '../data/database.dart';
 import '../data/models.dart';
 import '../utils/navigate.dart';
 import '../widgets/command.dart';
@@ -22,7 +21,7 @@ class SystemListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final scannedSystems = ref.watch(scannedSystemProvider);
     return scannedSystems.when(
-      loading: () => const LoadingWidget(),
+      loading: () => const LoadingSpinner(),
       error: (error, stack) => Text(error.toString()),
       data: (systems) {
         final system = systems[ref.watch(selectedSystemIndexProvider)];
@@ -115,7 +114,7 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
 
     return scannedSystems.when(
       error: (error, stack) => Text('$error\n$stack'),
-      loading: () => const LoadingWidget(),
+      loading: () => const LoadingSpinner(),
       data: (systems) {
         return Column(
           children: [
@@ -245,8 +244,8 @@ class GameSystemDetail extends ConsumerWidget {
               child: SmallLabel(
                 text: gameList.when(
                   data: (data) => Text('${data.length} games'),
-                  error: (error, stack) => SizedBox(),
-                  loading: () => SizedBox(),
+                  error: (error, stack) => const SizedBox(),
+                  loading: () => const LoadingSpinner.small(),
                 ),
               ),
             ),

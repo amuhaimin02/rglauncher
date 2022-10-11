@@ -11,7 +11,7 @@ final services = GetIt.instance;
 
 Future<void> initializeServices() async {
   services.registerSingleton(await Globals.setup());
-  services.registerSingleton(AppDatabase());
+  services.registerSingleton(await Database.open());
   services.registerSingleton(
     MediaManager(services<Globals>().privateAppDirectory.path),
   );

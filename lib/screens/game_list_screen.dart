@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:rglauncher/data/database.dart';
 import 'package:rglauncher/data/models.dart';
 import 'package:rglauncher/features/media_manager.dart';
+import 'package:rglauncher/widgets/clicky_list_view.dart';
 import 'package:rglauncher/widgets/fading_edge.dart';
 import 'package:rglauncher/widgets/launcher_scaffold.dart';
 import 'package:rglauncher/widgets/loading_spinner.dart';
@@ -337,19 +337,18 @@ class GameListView extends ConsumerStatefulWidget {
 }
 
 class _GameListViewState extends ConsumerState<GameListView> {
-  final _scrollController = ScrollController();
+  final _controller = ClickyListScrollController();
 
   int _currentIndex = 0;
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
     ref.listen(selectedGameListIndexProvider, (prevIndex, newIndex) {
-      _scrollController.animateTo(
-        newIndex * gameListItemHeight,
-        duration: defaultAnimationDuration,
-        curve: defaultAnimationCurve,
-      );
+      // _scrollController.animateTo(
+      //   newIndex * gameListItemHeight,
+      //   duration: defaultAnimationDuration,
+      //   curve: defaultAnimationCurve,
+      // );
     });
 
     return CommandWrapper(
@@ -372,16 +371,16 @@ class _GameListViewState extends ConsumerState<GameListView> {
           switch (direction) {
             case GamepadDirection.up:
               if (repeating) {
-                _softSetIndex(_currentIndex - 1, animate: true);
+                _controller.goPreviousBy(1, fast: true);
               } else {
-                _hardSetIndex(_currentIndex - 1);
+                _controller.goPreviousBy(1);
               }
               break;
             case GamepadDirection.down:
               if (repeating) {
-                _softSetIndex(_currentIndex + 1, animate: true);
+                _controller.goNextBy(1, fast: true);
               } else {
-                _hardSetIndex(_currentIndex + 1);
+                _controller.goNextBy(1);
               }
               break;
             case GamepadDirection.left:
@@ -395,81 +394,69 @@ class _GameListViewState extends ConsumerState<GameListView> {
           }
         },
         onLeftShoulder: () {
-          _hardSetIndex(_currentIndex - 10);
+          _controller.goPreviousBy(10);
         },
         onRightShoulder: () {
-          _hardSetIndex(_currentIndex + 10);
+          _controller.goNextBy(10);
         },
         onA: () {
           _onItemSelected(context);
         },
-        child: NotificationListener<ScrollNotification>(
-          onNotification: (scrollInfo) {
-            if (scrollInfo is ScrollUpdateNotification) {
-              final computedIndex =
-                  (scrollInfo.metrics.pixels / gameListItemHeight).round();
-              _softSetIndex(computedIndex);
-              return true;
-            } else if (scrollInfo is UserScrollNotification) {
-              final computedIndex =
-                  (scrollInfo.metrics.pixels / gameListItemHeight).round();
-              _hardSetIndex(computedIndex);
-              return true;
-            }
-            return false;
+        child: ClickyListView(
+          controller: _controller,
+          sideGap: 12,
+          listItemSize: gameListItemHeight,
+          initialIndex: 1,
+          itemCount: widget.gameList.length,
+          itemBuilder: (context, index, selected) {
+            return GameListTile(
+              onTap: () => _onListTap(context, index),
+              selected: selected,
+              game: widget.gameList[index],
+            );
           },
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final widgetHeight = constraints.maxHeight;
-              return FadingEdge(
-                direction: Axis.vertical,
-                fadingEdgeSize: 100,
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(12.0) +
-                      EdgeInsets.symmetric(vertical: widgetHeight / 2.5),
-                  controller: _scrollController,
-                  itemCount: widget.gameList.length,
-                  itemBuilder: (context, index) {
-                    return Material(
-                      color: index == _currentIndex
-                          ? Colors.white
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      child: InkWell(
-                        onTap: () => _onListTap(context, index),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          alignment: AlignmentDirectional.centerStart,
-                          height: gameListItemHeight,
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  widget.gameList[index].name,
-                                  style: textTheme.bodyLarge!.copyWith(
-                                    color: index == _currentIndex
-                                        ? Colors.black
-                                        : Colors.white,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              if (widget.gameList[index].isFavorite)
-                                const Icon(
-                                  Icons.favorite,
-                                  color: Colors.red,
-                                )
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
-          ),
+          onChanged: (index) {
+            ref.read(selectedGameListIndexProvider.state).state = index;
+          },
         ),
+        // child: NotificationListener<ScrollNotification>(
+        //   onNotification: (scrollInfo) {
+        //     if (scrollInfo is ScrollUpdateNotification) {
+        //       final computedIndex =
+        //           (scrollInfo.metrics.pixels / gameListItemHeight).round();
+        //       _softSetIndex(computedIndex);
+        //       return true;
+        //     } else if (scrollInfo is UserScrollNotification) {
+        //       final computedIndex =
+        //           (scrollInfo.metrics.pixels / gameListItemHeight).round();
+        //       _hardSetIndex(computedIndex);
+        //       return true;
+        //     }
+        //     return false;
+        //   },
+        //   child: LayoutBuilder(
+        //     builder: (context, constraints) {
+        //       final widgetHeight = constraints.maxHeight;
+        //       return FadingEdge(
+        //         direction: Axis.vertical,
+        //         fadingEdgeSize: 100,
+        //         child: ListView.builder(
+        //           padding: const EdgeInsets.all(12.0) +
+        //               EdgeInsets.symmetric(vertical: widgetHeight / 2.5),
+        //           controller: _scrollController,
+        //           itemCount: widget.gameList.length,
+        //           itemBuilder: (context, index) {
+        //             return GameListTile(
+        //               onTap: () => _onListTap(context, index),
+        //               selected: index == _currentIndex,
+        //               game: widget.gameList[index],
+        //             );
+        //           },
+        //         ),
+        //       );
+        //     },
+        //   ),
+        // ),
       ),
     );
   }
@@ -483,30 +470,6 @@ class _GameListViewState extends ConsumerState<GameListView> {
     }
   }
 
-  void _hardSetIndex(int newIndex) {
-    newIndex = newIndex.clamp(0, widget.gameList.length - 1);
-    ref.read(selectedGameListIndexProvider.state).state = newIndex;
-    setState(() {
-      _currentIndex = newIndex;
-    });
-  }
-
-  void _softSetIndex(int newIndex, {bool animate = false}) {
-    if (_currentIndex == newIndex) return;
-    newIndex = newIndex.clamp(0, widget.gameList.length - 1);
-
-    if (animate) {
-      _scrollController.jumpTo(
-        newIndex * gameListItemHeight,
-        // duration: Duration(milliseconds: 100),
-        // curve: defaultAnimationCurve,
-      );
-    }
-    setState(() {
-      _currentIndex = newIndex;
-    });
-  }
-
   void _onItemSelected(BuildContext context) async {
     final game = widget.gameList[_currentIndex];
     final emulators =
@@ -514,6 +477,54 @@ class _GameListViewState extends ConsumerState<GameListView> {
     services<AppLauncher>().launchGameUsingEmulator(
       game,
       emulators.first,
+    );
+  }
+}
+
+class GameListTile extends StatelessWidget {
+  const GameListTile({
+    Key? key,
+    required this.onTap,
+    required this.game,
+    this.selected = false,
+  }) : super(key: key);
+
+  final VoidCallback onTap;
+  final Game game;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Material(
+      color: selected ? Colors.white : Colors.transparent,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          alignment: AlignmentDirectional.centerStart,
+          height: gameListItemHeight,
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  game.name,
+                  style: textTheme.bodyLarge!.copyWith(
+                    color: selected ? Colors.black : Colors.white,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (game.isFavorite)
+                const Icon(
+                  Icons.favorite,
+                  color: Colors.red,
+                )
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

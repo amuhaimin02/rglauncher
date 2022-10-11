@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rglauncher/data/providers.dart';
 import 'package:rglauncher/features/media_manager.dart';
 import 'package:rglauncher/features/services.dart';
 import 'package:rglauncher/screens/game_list_screen.dart';
+import 'package:rglauncher/widgets/clicky_list_view.dart';
 import 'package:rglauncher/widgets/loading_spinner.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
@@ -93,6 +95,8 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
     initialPage: ref.watch(selectedSystemIndexProvider),
   );
 
+  late final _controller = ClickyListScrollController();
+
   double _calculateViewportFraction() {
     final screenSize = MediaQuery.of(context).size;
     final viewportFraction = screenSize.height / screenSize.width;
@@ -105,11 +109,12 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
     final scannedSystems = ref.watch(scannedSystemProvider);
 
     ref.listen(selectedSystemIndexProvider, (prevIndex, newIndex) {
-      _pageController.animateToPage(
-        newIndex,
-        duration: defaultAnimationDuration,
-        curve: defaultAnimationCurve,
-      );
+      // _pageController.animateToPage(
+      //   newIndex,
+      //   duration: defaultAnimationDuration,
+      //   curve: defaultAnimationCurve,
+      // );
+      _controller.jumpToIndex(newIndex);
     });
 
     return scannedSystems.when(
@@ -126,20 +131,36 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
             ),
             Expanded(
               flex: 6,
-              child: PageView(
-                controller: _pageController,
-                children: [
-                  for (int i = 0; i < systems.length; i++)
-                    SystemItemTile(
-                      selected: currentSystemIndex == i,
-                      onTap: () => _openGameListScreen(context, i),
-                      system: systems[i],
-                    ),
-                ],
-                onPageChanged: (index) {
+              child: ClickyListView(
+                controller: _controller,
+                itemCount: systems.length,
+                itemBuilder: (context, index, selected) {
+                  return SystemItemTile(
+                    selected: selected,
+                    onTap: () => _openGameListScreen(context, index),
+                    system: systems[index],
+                  );
+                },
+                listItemSize: 200,
+                scrollDirection: Axis.horizontal,
+                onChanged: (index) {
                   ref.read(selectedSystemIndexProvider.state).state = index;
                 },
               ),
+              // child: PageView(
+              //   controller: _pageController,
+              //   children: [
+              //     for (int i = 0; i < systems.length; i++)
+              //       SystemItemTile(
+              //         selected: currentSystemIndex == i,
+              //         onTap: () => _openGameListScreen(context, i),
+              //         system: systems[i],
+              //       ),
+              //   ],
+              //   onPageChanged: (index) {
+              //     ref.read(selectedSystemIndexProvider.state).state = index;
+              //   },
+              // ),
             ),
             const Spacer(flex: 2)
           ],

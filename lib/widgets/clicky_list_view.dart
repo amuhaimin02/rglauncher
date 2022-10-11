@@ -12,6 +12,7 @@ class ClickyListView extends StatefulWidget {
     this.sideGap = 0,
     this.initialIndex = 0,
     required this.listItemSize,
+    this.scrollDirection = Axis.vertical,
     this.controller,
   }) : super(key: key);
 
@@ -22,6 +23,7 @@ class ClickyListView extends StatefulWidget {
   final double sideGap;
   final int initialIndex;
   final double listItemSize;
+  final Axis scrollDirection;
   final ClickyListScrollController? controller;
 
   @override
@@ -65,22 +67,34 @@ class _ClickyListViewState extends State<ClickyListView> {
             children: [
               ListView.builder(
                 controller: _scrollController,
-                padding: EdgeInsets.symmetric(
-                  horizontal: widget.sideGap,
-                  vertical: constraints.maxHeight / 2 - widget.listItemSize / 2,
-                ),
+                scrollDirection: widget.scrollDirection,
+                padding: widget.scrollDirection == Axis.vertical
+                    ? EdgeInsets.symmetric(
+                        horizontal: widget.sideGap,
+                        vertical:
+                            constraints.maxHeight / 2 - widget.listItemSize / 2,
+                      )
+                    : EdgeInsets.symmetric(
+                        vertical: widget.sideGap,
+                        horizontal:
+                            constraints.maxWidth / 2 - widget.listItemSize / 2,
+                      ),
                 itemCount: widget.itemCount,
-                itemBuilder: (context, index) => LimitedBox(
-                  maxHeight: widget.listItemSize,
+                itemBuilder: (context, index) => SizedBox(
+                  width: widget.scrollDirection == Axis.horizontal
+                      ? widget.listItemSize
+                      : null,
+                  height: widget.scrollDirection == Axis.vertical
+                      ? widget.listItemSize
+                      : null,
                   child: widget.itemBuilder(
                       context, index, index == _currentIndex),
                 ),
               ),
-              Container(
-                height: constraints.maxHeight / 2,
-                width: double.infinity,
-                color: Colors.yellow.withOpacity(0.2),
-              )
+              // Container(
+              //   width: constraints.maxWidth / 2 - widget.listItemSize / 2,
+              //   color: Colors.yellow.withOpacity(0.2),
+              // )
             ],
           );
         },

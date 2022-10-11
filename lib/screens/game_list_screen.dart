@@ -349,6 +349,7 @@ class _GameListViewState extends ConsumerState<GameListView> {
       //   duration: defaultAnimationDuration,
       //   curve: defaultAnimationCurve,
       // );
+      _controller.jumpToIndex(newIndex);
     });
 
     return CommandWrapper(

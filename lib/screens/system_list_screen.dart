@@ -104,10 +104,11 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
 
   @override
   Widget build(BuildContext context) {
-    //
-    // ref.listen(selectedSystemIndexProvider, (prevIndex, newIndex) {
-    //   _controller.jumpToIndex(newIndex);
-    // });
+    ref.listen(selectedSystemProvider, (prevSystem, newSystem) {
+      if (newSystem != null) {
+        _controller.jumpToIndex(widget.systemList.indexOf(newSystem));
+      }
+    });
 
     return Column(
       children: [
@@ -133,8 +134,12 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
             itemBuilder: (context, index, selected) {
               return SystemItemTile(
                 selected: selected,
-                onTap: () =>
-                    _openGameListScreen(context, widget.systemList[index]),
+                onTap: () {
+                  if (_controller.currentIndex != index) {
+                    _controller.jumpToIndex(index);
+                  }
+                  _openGameListScreen(context, widget.systemList[index]);
+                },
                 system: widget.systemList[index],
               );
             },

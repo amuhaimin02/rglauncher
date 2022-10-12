@@ -24,43 +24,39 @@ class GameListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final scannedSystems = ref.watch(scannedSystemProvider);
-    return scannedSystems.when(
-      error: (error, stack) => Text('$error\n$stack'),
-      loading: () => const CircularProgressIndicator(),
-      data: (systems) {
-        return LauncherScaffold(
-          // backgroundImage: FileImage(
-          //   services<MediaManager>().getGameMediaFile(game),
-          // ),
-          // body: PageView.builder(
-          //   controller: _pageController,
-          //   itemCount: systems.length,
-          //   itemBuilder: (context, index) {
-          //     final system = systems[index];
-          //     return GameListContent(
-          //       titles: system.name,
-          //       gameLists: library[system]!,
-          //     );
-          //   },
-          //   onPageChanged: (newIndex) {
-          //     ref.read(selectedSystemIndexProvider.state).state = newIndex;
-          //     ref.read(selectedGameListIndexProvider.state).state = 0;
-          //   },
-          // ),
-          body: GameListContent(
-            pageSize: systems.length,
-            getTitle: (index) => systems[index].name,
-            getGameList: (index) =>
-                ref.watch(gameLibraryProvider(systems[index]).future),
-            onPageChanged: (newIndex) {
-              // Future.microtask(() {
-              //   ref.read(selectedSystemIndexProvider.state).state = newIndex;
-              // });
-            },
-          ),
-        );
-      },
+    final selectedGame = ref.watch(selectedGameProvider);
+    return LauncherScaffold(
+      backgroundImage: selectedGame != null
+          ? FileImage(
+              services<MediaManager>().getGameMediaFile(selectedGame),
+            )
+          : null,
+      body: FutureWidget(
+        future: ref.watch(scannedSystemProvider.future),
+        builder: (context, systems) {
+          return LauncherScaffold(
+            body: GameListContent(
+              pageSize: systems.length,
+              initialIndex: () {
+                final selectedSystem = ref.read(selectedSystemProvider);
+                if (selectedSystem != null) {
+                  return systems.indexOf(selectedSystem);
+                } else {
+                  return 0;
+                }
+              }(),
+              getTitle: (index) => systems[index].name,
+              getGameList: (index) =>
+                  ref.watch(gameLibraryProvider(systems[index]).future),
+              onPageChanged: (index) {
+                Future.microtask(() {
+                  ref.read(selectedSystemProvider.state).state = systems[index];
+                });
+              },
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -162,11 +158,13 @@ class GameListContent extends ConsumerStatefulWidget {
     required this.pageSize,
     required this.getTitle,
     required this.getGameList,
+    this.initialIndex,
     this.onPageChanged,
   })  : paginated = pageSize > 1,
         super(key: key);
 
   final int pageSize;
+  final int? initialIndex;
   final String Function(int index) getTitle;
   final Future<List<Game>> Function(int index) getGameList;
   final Function(int index)? onPageChanged;
@@ -177,16 +175,13 @@ class GameListContent extends ConsumerStatefulWidget {
 }
 
 class _GameListContentState extends ConsumerState<GameListContent> {
-  late final PageController _pageController = PageController();
+  late final PageController _pageController = PageController(
+    initialPage: widget.initialIndex ?? 0,
+  );
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (widget.paginated) {
-      // Future.microtask(() {
-      //   _pageController.jumpToPage(ref.read(selectedSystemIndexProvider));
-      // });
-    }
   }
 
   @override
@@ -280,23 +275,49 @@ class GameDetailPane extends ConsumerWidget {
     return Center(
       child: Container(
         padding: const EdgeInsets.all(32),
-        child: AnimatedSize(
-          duration: defaultAnimationDuration,
-          curve: defaultAnimationCurve,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              minWidth: 240,
-              minHeight: 240,
-            ),
-            child: Material(
-              elevation: 4,
-              borderRadius: BorderRadius.circular(16),
-              clipBehavior: Clip.antiAlias,
-              color: Colors.grey.shade800,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  game != null
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            AnimatedSwitcher(
+              duration: defaultAnimationDuration,
+              switchInCurve:
+                  const Interval(0.5, 1, curve: defaultAnimationCurve),
+              switchOutCurve: Curves.easeIn,
+              transitionBuilder: (child, animation) {
+                // if (animation.status == AnimationStatus.dismissed) {
+                return ScaleTransition(
+                  scale: Tween<double>(begin: 0.85, end: 1).animate(animation),
+                  child: RotationTransition(
+                    turns:
+                        Tween<double>(begin: 0.99, end: 1).animate(animation),
+                    child: FadeTransition(
+                      opacity: animation,
+                      child: child,
+                    ),
+                  ),
+                );
+                // } else {
+                //   return ScaleTransition(
+                //     scale: Tween<double>(begin: 0.7, end: 1).animate(animation),
+                //     child: FadeTransition(
+                //       opacity: animation,
+                //       child: child,
+                //     ),
+                //   );
+                // }
+              },
+              child: Material(
+                key: ObjectKey(game),
+                elevation: 4,
+                borderRadius: BorderRadius.circular(16),
+                clipBehavior: Clip.antiAlias,
+                color: Colors.grey.shade800,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth: 120,
+                    minHeight: 120,
+                  ),
+                  child: game != null
                       ? Image(
                           image: FileImage(
                             services<MediaManager>().getGameMediaFile(game),
@@ -306,34 +327,35 @@ class GameDetailPane extends ConsumerWidget {
                           width: 240,
                           height: 240,
                           alignment: Alignment.center,
-                          child: const Text('No game'),
+                          child: const Text('No media'),
                         ),
-                  FutureWidget(
-                    future: ref.watch(selectedGameMetadataProvider.future),
-                    builder: (context, meta) {
-                      final textTheme = Theme.of(context).textTheme;
-                      return Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Text(meta?.title ?? 'No title',
-                                style: textTheme.headlineSmall),
-                            Text(meta?.description ?? 'No meta',
-                                style: textTheme.bodyMedium),
-                            const SizedBox(height: 8),
-                            Text(meta?.genre ?? 'No genre',
-                                style: textTheme.bodySmall),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
+            )
+            // FutureWidget(
+            //   future: ref.watch(selectedGameMetadataProvider.future),
+            //   builder: (context, meta) {
+            //     final textTheme = Theme.of(context).textTheme;
+            //     return Padding(
+
+            //       padding: const EdgeInsets.all(16.0),
+            //       child: Column(
+            //         crossAxisAlignment: CrossAxisAlignment.start,
+            //         mainAxisAlignment: MainAxisAlignment.end,
+            //         children: [
+            //           Text(meta?.title ?? 'No title',
+            //               style: textTheme.headlineSmall),
+            //           Text(meta?.description ?? 'No meta',
+            //               style: textTheme.bodyMedium),
+            //           const SizedBox(height: 8),
+            //           Text(meta?.genre ?? 'No genre',
+            //               style: textTheme.bodySmall),
+            //         ],
+            //       ),
+            //     );
+            //   },
+            // ),
+          ],
         ),
       ),
     );

@@ -155,11 +155,7 @@ class _ClickyListViewState extends State<ClickyListView> {
   }
 
   void jumpToIndex(int newIndex) {
-    _scrollController.animateTo(
-      newIndex * widget.listItemSize,
-      duration: defaultAnimationDuration,
-      curve: defaultAnimationCurve,
-    );
+    _hardSetIndex(newIndex);
   }
 
   void jumpBy(int delta, bool fast) {

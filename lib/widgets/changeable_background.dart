@@ -52,6 +52,8 @@ class BackgroundWrapper extends ConsumerStatefulWidget {
 
 class _BackgroundWrapperState extends ConsumerState<BackgroundWrapper>
     with RouteAware {
+  bool allowedToUpdate = true;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -63,7 +65,7 @@ class _BackgroundWrapperState extends ConsumerState<BackgroundWrapper>
   @override
   void didUpdateWidget(covariant BackgroundWrapper oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.image != oldWidget.image) {
+    if (widget.image != oldWidget.image && allowedToUpdate) {
       _updateImage(widget.image);
     }
   }
@@ -77,17 +79,23 @@ class _BackgroundWrapperState extends ConsumerState<BackgroundWrapper>
   @override
   void didPush() {
     _updateImage(widget.image);
+    allowedToUpdate = true;
   }
 
   @override
-  void didPushNext() {}
+  void didPushNext() {
+    allowedToUpdate = false;
+  }
 
   @override
-  void didPop() {}
+  void didPop() {
+    allowedToUpdate = false;
+  }
 
   @override
   void didPopNext() {
     _updateImage(widget.image);
+    allowedToUpdate = true;
   }
 
   void _updateImage(ImageProvider? newImage) {

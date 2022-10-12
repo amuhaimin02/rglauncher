@@ -7,6 +7,7 @@ import 'package:palette_generator/palette_generator.dart';
 import 'package:rglauncher/data/configs.dart';
 import 'package:rglauncher/data/providers.dart';
 import 'package:rglauncher/features/library_manager.dart';
+import 'package:rglauncher/features/media_manager.dart';
 import 'package:rglauncher/features/services.dart';
 import 'package:rglauncher/screens/system_list_screen.dart';
 import 'package:rglauncher/utils/extensions.dart';
@@ -151,18 +152,24 @@ class _HomePageState extends ConsumerState<HomePage> {
                   return TwoLineGridItem(
                     large: true,
                     aspectRatio: 0.6,
-                    child: const MenuTile(
+                    child: MenuTile(
                       label: 'Continue',
+                      sublabel: game?.name ?? 'No games played',
                       icon: Icons.play_circle_rounded,
-                      image: NetworkImage('https://picsum.photos/400/400'),
+                      image: game != null
+                          ? FileImage(
+                              services<MediaManager>().getGameMediaFile(game))
+                          : null,
                     ),
                     onTap: () async {
-                      final emulators = await ref.read(
-                          systemEmulatorsProvider(game!.systemCode).future);
-                      services<AppLauncher>().launchGameUsingEmulator(
-                        game,
-                        emulators.first,
-                      );
+                      if (game != null) {
+                        final emulators = await ref.read(
+                            systemEmulatorsProvider(game.systemCode).future);
+                        services<AppLauncher>().launchGameUsingEmulator(
+                          game,
+                          emulators.first,
+                        );
+                      }
                     },
                   );
                 },
@@ -281,16 +288,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  void _openSingleListScreen(BuildContext context, String title) {
-    Navigate.to(
-      (context) => SingleGameListScreen(
-        title: title,
-        gameList: const [],
-      ),
-      direction: Axis.vertical,
-    );
-  }
-
   void _onButtonAPressed(BuildContext context) {
     final selectedIndex = ref.read(selectedMenuIndexProvider);
     _itemLauncher(selectedIndex);
@@ -326,12 +323,14 @@ class SelectionWrapper extends ConsumerWidget {
 }
 
 class MenuTile extends StatelessWidget {
-  const MenuTile({Key? key, required this.label, this.icon, this.image})
+  const MenuTile(
+      {Key? key, required this.label, this.icon, this.image, this.sublabel})
       : super(key: key);
 
   final String label;
   final IconData? icon;
   final ImageProvider? image;
+  final String? sublabel;
 
   @override
   Widget build(BuildContext context) {
@@ -355,7 +354,21 @@ class MenuTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
         child: Stack(
           children: [
-            Text(label, style: textTheme.titleLarge),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: textTheme.titleLarge),
+                if (sublabel != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    sublabel!,
+                    style: textTheme.labelLarge,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
             Align(
               alignment: Alignment.bottomRight,
               child: Icon(

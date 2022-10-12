@@ -82,8 +82,11 @@ class Game {
   @Index()
   int? pinIndex;
 
-  @ignore
+  @Index(unique: true, replace: true)
   String get fullpath => path.join(filepath, filename);
+
+  @override
+  String toString() => 'Game: $name';
 }
 
 @collection

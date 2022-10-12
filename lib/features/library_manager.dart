@@ -45,7 +45,7 @@ class LibraryManager {
 
     await db.updateEmulators(emulatorList);
 
-    await downloadAndStoreSystemImages(systems: systemList);
+    // await downloadAndStoreSystemImages(systems: systemList);
   }
 
   Future<void> scanLibrariesFromStorage({
@@ -92,7 +92,7 @@ Future<void> _doScrapeAndStoreGameImages(JsonMap args) async {
   final manager = args['mediaManager'] as MediaManager;
   final progressPort = args['progressPort'] as SendPort;
   final db = await Database.open(temporary: true);
-  final games = await db.allGames();
+  final games = await db.getAllGames();
 
   int gameProcessed = 0;
   final scraper = DummyScraper();
@@ -104,7 +104,7 @@ Future<void> _doScrapeAndStoreGameImages(JsonMap args) async {
       final imageLink = await scraper.getBoxArtImageLink(game);
       final meta = await scraper.getGameMetadata(game);
       final imageBytes = await manager.downloadImage(imageLink);
-      await db.storeGameMetadata(game, meta);
+      await db.saveGameMetadata(game, meta);
       manager.saveGameMediaFile(imageBytes, game);
     } else {
       // Skipping
@@ -115,7 +115,7 @@ Future<void> _doScrapeAndStoreGameImages(JsonMap args) async {
 Future<void> _doScanLibraryFromStorage(JsonMap args) async {
   final storagePaths = args['storagePaths'] as List<Directory>;
   final database = await Database.open(temporary: true);
-  final systems = await database.allSystems();
+  final systems = await database.getAllSystems();
 
   final gameLists = <Game>[];
   final folderToSystemMap = {

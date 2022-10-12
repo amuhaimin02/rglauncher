@@ -39,7 +39,7 @@ final commandProvider = StateProvider<List<Command>>((ref) => []);
 final allSystemsProvider = FutureProvider(
   (ref) async {
     final db = services<Database>();
-    return db.allSystems();
+    return db.getAllSystems();
   },
 );
 
@@ -65,13 +65,13 @@ final selectedGameMetadataProvider = FutureProvider((ref) async {
 
 final scannedSystemProvider = FutureProvider((ref) async {
   final database = services<Database>();
-  return database.scannedSystems();
+  return database.getScannedSystems();
 });
 
 final gameLibraryProvider =
     FutureProvider.family<List<Game>, System>((ref, system) async {
   final db = services<Database>();
-  return db.allGamesBySystem(system);
+  return db.getGamesBySystem(system);
 });
 
 final allGamesProvider = FutureProvider((ref) async {
@@ -109,7 +109,7 @@ final pinnedGamesProvider = FutureProvider((ref) async {
   return db.getPinnedGames();
 });
 
-final continueGameProvider = FutureProvider((ref) async {
+final continueGameProvider = StreamProvider((ref) {
   final db = services<Database>();
   return db.getLastPlayedGame();
 });

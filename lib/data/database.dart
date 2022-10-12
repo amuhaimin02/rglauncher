@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:isar/isar.dart';
 import 'package:rglauncher/data/configs.dart';
 
@@ -25,7 +26,7 @@ class Database {
     });
   }
 
-  Future<List<System>> allSystems() async {
+  Future<List<System>> getAllSystems() async {
     return _isar.systems.where().anyId().findAll();
   }
 
@@ -39,22 +40,21 @@ class Database {
     });
   }
 
-  Future<List<Emulator>> allEmulators() async {
+  Future<List<Emulator>> getAllEmulators() async {
     return _isar.emulators.where().anyId().findAll();
   }
 
   Future<void> refreshGames(List<Game> gameList) async {
     _isar.writeTxnSync(() {
-      _isar.games.clearSync();
       _isar.games.putAllSync(gameList);
     });
   }
 
-  Future<List<Game>> allGames() async {
+  Future<List<Game>> getAllGames() async {
     return _isar.games.where().sortByName().findAll();
   }
 
-  Future<List<Game>> allGamesBySystem(System system) async {
+  Future<List<Game>> getGamesBySystem(System system) async {
     return _isar.games
         .filter()
         .systemCodeEqualTo(system.code)
@@ -97,7 +97,7 @@ class Database {
     });
   }
 
-  Future<void> storeGameMetadata(Game game, GameMetadata meta) async {
+  Future<void> saveGameMetadata(Game game, GameMetadata meta) async {
     await _isar.writeTxn(() async {
       await _isar.gameMetadatas.put(
         meta..key = game.filename,
@@ -117,7 +117,7 @@ class Database {
         .findAll();
   }
 
-  Future<List<System>> scannedSystems() async {
+  Future<List<System>> getScannedSystems() async {
     final systemCodes =
         await _isar.games.where().distinctBySystemCode().findAll();
     return _isar.systems
@@ -145,7 +145,7 @@ class Database {
 
   Future<List<Game>> getNewlyAddedGames() {
     final pastRecentDays =
-        DateTime.now().subtract(const Duration(days: daysConsideredRecent));
+    DateTime.now().subtract(const Duration(days: daysConsideredRecent));
     return _isar.games
         .filter()
         .timeAddedGreaterThan(pastRecentDays)
@@ -163,7 +163,14 @@ class Database {
         .findAll();
   }
 
-  Future<Game?> getLastPlayedGame() async {
-    return _isar.games.where().sortByTimeLastPlayedDesc().findFirst();
+  Stream<Game?> getLastPlayedGame() {
+    return _isar.games
+        .where()
+        .timeLastPlayedIsNotNull()
+        .sortByTimeLastPlayedDesc()
+        .limit(1)
+        .build()
+        .watch(fireImmediately: true)
+        .map((list) => list.firstOrNull);
   }
 }

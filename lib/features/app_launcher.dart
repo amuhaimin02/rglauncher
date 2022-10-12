@@ -16,6 +16,7 @@ class AppLauncher {
     db.toggleFavorite(game);
     db.updateLastPlayed(game);
     db.pinGame(game, 0);
+    print('Launching $game');
 
     if (Platform.isAndroid) {
       final intent = AndroidIntent(

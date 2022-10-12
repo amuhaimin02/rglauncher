@@ -6,6 +6,7 @@ import 'package:rglauncher/data/models.dart';
 import 'package:rglauncher/features/media_manager.dart';
 import 'package:rglauncher/widgets/clicky_list_view.dart';
 import 'package:rglauncher/widgets/fading_edge.dart';
+import 'package:rglauncher/widgets/future_widget.dart';
 import 'package:rglauncher/widgets/launcher_scaffold.dart';
 import 'package:rglauncher/widgets/loading_spinner.dart';
 import 'package:rglauncher/widgets/small_label.dart';
@@ -17,7 +18,6 @@ import '../features/services.dart';
 import '../utils/navigate.dart';
 import '../widgets/command.dart';
 import '../widgets/gamepad_listener.dart';
-import '../widgets/image_with_status.dart';
 
 class GameListScreen extends ConsumerWidget {
   const GameListScreen({super.key});
@@ -54,10 +54,9 @@ class GameListScreen extends ConsumerWidget {
             getGameList: (index) =>
                 ref.watch(gameLibraryProvider(systems[index]).future),
             onPageChanged: (newIndex) {
-              Future.microtask(() {
-                ref.read(selectedSystemIndexProvider.state).state = newIndex;
-                ref.read(selectedGameListIndexProvider.state).state = 0;
-              });
+              // Future.microtask(() {
+              //   ref.read(selectedSystemIndexProvider.state).state = newIndex;
+              // });
             },
           ),
         );
@@ -178,9 +177,17 @@ class GameListContent extends ConsumerStatefulWidget {
 }
 
 class _GameListContentState extends ConsumerState<GameListContent> {
-  late final PageController _pageController = PageController(
-    initialPage: ref.watch(selectedSystemIndexProvider),
-  );
+  late final PageController _pageController = PageController();
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.paginated) {
+      // Future.microtask(() {
+      //   _pageController.jumpToPage(ref.read(selectedSystemIndexProvider));
+      // });
+    }
+  }
 
   @override
   void dispose() {
@@ -190,15 +197,15 @@ class _GameListContentState extends ConsumerState<GameListContent> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.paginated) {
-      ref.listen(selectedSystemIndexProvider, (prevIndex, newIndex) {
-        _pageController.animateToPage(
-          newIndex,
-          duration: defaultAnimationDuration,
-          curve: defaultAnimationCurve,
-        );
-      });
-    }
+    // if (widget.paginated) {
+    //   ref.listen(selectedSystemProvider, (prevIndex, newIndex) {
+    //     _pageController.animateToPage(
+    //       newIndex,
+    //       duration: defaultAnimationDuration,
+    //       curve: defaultAnimationCurve,
+    //     );
+    //   });
+    // }
 
     final textTheme = Theme.of(context).textTheme;
     return Row(
@@ -213,41 +220,41 @@ class _GameListContentState extends ConsumerState<GameListContent> {
               itemCount: widget.pageSize,
               itemBuilder: (context, index) {
                 return FutureBuilder<List<Game>>(
-                    future: widget.getGameList(index),
-                    builder: (context, snapshot) {
-                      return Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(20.0) -
-                                const EdgeInsets.only(bottom: 20),
-                            child: Row(
-                              children: [
-                                Text(
-                                  widget.getTitle(index),
-                                  style: textTheme.headlineSmall!
-                                      .copyWith(fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(width: 12),
-                                if (snapshot.data != null)
-                                  SmallLabel(
-                                    text:
-                                        Text(snapshot.data!.length.toString()),
-                                  )
-                              ],
-                            ),
+                  future: widget.getGameList(index),
+                  builder: (context, snapshot) {
+                    return Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(20.0) -
+                              const EdgeInsets.only(bottom: 20),
+                          child: Row(
+                            children: [
+                              Text(
+                                widget.getTitle(index),
+                                style: textTheme.headlineSmall!
+                                    .copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(width: 12),
+                              if (snapshot.data != null)
+                                SmallLabel(
+                                  text: Text(snapshot.data!.length.toString()),
+                                )
+                            ],
                           ),
-                          Expanded(child: () {
-                            if (snapshot.data != null) {
-                              return GameListView(
-                                gameList: snapshot.data!,
-                              );
-                            } else {
-                              return const LoadingSpinner();
-                            }
-                          }()),
-                        ],
-                      );
-                    });
+                        ),
+                        Expanded(child: () {
+                          if (snapshot.data != null) {
+                            return GameListView(
+                              gameList: snapshot.data!,
+                            );
+                          } else {
+                            return const LoadingSpinner();
+                          }
+                        }()),
+                      ],
+                    );
+                  },
+                );
               },
               onPageChanged: widget.onPageChanged,
             ),
@@ -269,8 +276,7 @@ class GameDetailPane extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedGame = ref.watch(selectedGameProvider);
-    final gameMetadata = ref.watch(selectedGameMetadataProvider);
+    final game = ref.watch(selectedGameProvider);
     return Center(
       child: Container(
         padding: const EdgeInsets.all(32),
@@ -288,39 +294,23 @@ class GameDetailPane extends ConsumerWidget {
               clipBehavior: Clip.antiAlias,
               color: Colors.grey.shade800,
               child: Stack(
+                alignment: Alignment.center,
                 children: [
-                  selectedGame.when(
-                    data: (game) {
-                      if (game != null) {
-                        return ImageWithStatus(
+                  game != null
+                      ? Image(
                           image: FileImage(
                             services<MediaManager>().getGameMediaFile(game),
                           ),
-                        );
-                      } else {
-                        return Container(
+                        )
+                      : Container(
                           width: 240,
-                          height: 230,
+                          height: 240,
                           alignment: Alignment.center,
                           child: const Text('No game'),
-                        );
-                      }
-                    },
-                    error: (error, stack) {
-                      return Container(
-                        width: 240,
-                        height: 230,
-                        alignment: Alignment.center,
-                        child: const Text('Error'),
-                      );
-                    },
-                    loading: () => const SizedBox(
-                      width: 120,
-                      height: 120,
-                    ),
-                  ),
-                  gameMetadata.when(
-                    data: (meta) {
+                        ),
+                  FutureWidget(
+                    future: ref.watch(selectedGameMetadataProvider.future),
+                    builder: (context, meta) {
                       final textTheme = Theme.of(context).textTheme;
                       return Padding(
                         padding: const EdgeInsets.all(16.0),
@@ -339,8 +329,6 @@ class GameDetailPane extends ConsumerWidget {
                         ),
                       );
                     },
-                    error: (e, s) => Text(e.toString()),
-                    loading: () => LoadingSpinner(),
                   ),
                 ],
               ),
@@ -369,10 +357,6 @@ class _GameListViewState extends ConsumerState<GameListView> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(selectedGameListIndexProvider, (prevIndex, newIndex) {
-      _controller.jumpToIndex(newIndex);
-    });
-
     return CommandWrapper(
       commands: [
         Command(button: CommandButton.x, label: 'Options', onTap: () {}),
@@ -407,11 +391,11 @@ class _GameListViewState extends ConsumerState<GameListView> {
               break;
             case GamepadDirection.left:
               if (repeating) return;
-              ref.read(selectedSystemIndexProvider.state).state--;
+              // ref.read(selectedSystemIndexProvider.state).state--;
               break;
             case GamepadDirection.right:
               if (repeating) return;
-              ref.read(selectedSystemIndexProvider.state).state++;
+              // ref.read(selectedSystemIndexProvider.state).state++;
               break;
           }
         },
@@ -424,32 +408,41 @@ class _GameListViewState extends ConsumerState<GameListView> {
         onA: () {
           _onItemSelected(context, _controller.currentIndex);
         },
-        child: ClickyListView(
-          controller: _controller,
-          sideGap: 12,
-          listItemSize: gameListItemHeight,
-          itemCount: widget.gameList.length,
-          itemBuilder: (context, index, selected) {
-            return GameListTile(
-              onTap: () => _onListTap(context, index),
-              selected: selected,
-              game: widget.gameList[index],
-            );
-          },
-          onChanged: (index) {
-            ref.read(selectedGameListIndexProvider.state).state = index;
-          },
+        child: FadingEdge(
+          direction: Axis.vertical,
+          fadingEdgeSize: 48,
+          child: ClickyListView(
+            controller: _controller,
+            sideGap: 12,
+            listItemSize: gameListItemHeight,
+            itemCount: widget.gameList.length,
+            itemBuilder: (context, index, selected) {
+              return GameListTile(
+                onTap: () => _onListTap(context, index),
+                selected: selected,
+                game: widget.gameList[index],
+              );
+            },
+            onChanged: (index) {
+              ref.read(selectedGameProvider.state).state =
+                  widget.gameList[index];
+              // ref.read(selectedGameListIndexProvider.state).state = index;
+            },
+            onListEmpty: () {
+              ref.read(selectedGameProvider.state).state = null;
+            },
+          ),
         ),
       ),
     );
   }
 
   void _onListTap(BuildContext context, int index) {
-    final currentIndex = ref.read(selectedGameListIndexProvider);
+    final currentIndex = _controller.currentIndex;
     if (currentIndex == index) {
       _onItemSelected(context, index);
     } else {
-      ref.read(selectedGameListIndexProvider.state).state = index;
+      _controller.jumpToIndex(index);
     }
   }
 

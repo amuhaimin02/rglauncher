@@ -3,7 +3,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:device_apps/device_apps.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:rglauncher/features/media_manager.dart';
 import 'package:rglauncher/features/notification_manager.dart';
 import 'package:rglauncher/features/services.dart';
 import 'package:rglauncher/utils/extensions.dart';
@@ -51,29 +50,17 @@ final systemEmulatorsProvider = FutureProvider.family<List<Emulator>, String>(
   },
 );
 
-final selectedSystemIndexProvider = StateProvider((ref) => 0);
-
 final selectedMenuIndexProvider = StateProvider((ref) => 0);
 
-final selectedGameListIndexProvider = StateProvider((ref) => 0);
+final selectedSystemProvider = StateProvider<System?>((ref) => null);
 
-final selectedSystemProvider = FutureProvider((ref) async {
-  final systems = await ref.watch(scannedSystemProvider.future);
-  return systems[ref.watch(selectedSystemIndexProvider)];
-});
-
-final selectedGameProvider = FutureProvider((ref) async {
-  final system = await ref.watch(selectedSystemProvider.future);
-  final library = await ref.watch(gameLibraryProvider(system).future);
-  final index = ref.watch(selectedGameListIndexProvider);
-  return library.get(index);
-});
+final selectedGameProvider = StateProvider<Game?>((ref) => null);
 
 final selectedGameMetadataProvider = FutureProvider((ref) async {
   final db = services<Database>();
-  final game = await ref.watch(selectedGameProvider.future);
+  final game = ref.watch(selectedGameProvider);
   if (game == null) return null;
-  return db.getMetadataForGame(game);
+  return await db.getMetadataForGame(game);
 });
 
 final scannedSystemProvider = FutureProvider((ref) async {

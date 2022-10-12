@@ -13,3 +13,23 @@ extension SafeIndexAccessList<E> on List<E> {
     }
   }
 }
+
+extension PrevNextIndexAccessList<E> on List<E> {
+  E? previousOf(E? item) {
+    if (item == null) return null;
+    try {
+      return this[indexOf(item) - 1];
+    } on RangeError {
+      return null;
+    }
+  }
+
+  E? nextOf(E? item) {
+    if (item == null) return null;
+    try {
+      return this[indexOf(item) + 1];
+    } on RangeError {
+      return null;
+    }
+  }
+}

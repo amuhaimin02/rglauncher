@@ -6,6 +6,7 @@ import 'package:rglauncher/features/media_manager.dart';
 import 'package:rglauncher/features/services.dart';
 import 'package:rglauncher/screens/game_list_screen.dart';
 import 'package:rglauncher/widgets/clicky_list_view.dart';
+import 'package:rglauncher/widgets/future_widget.dart';
 import 'package:rglauncher/widgets/loading_spinner.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
@@ -21,16 +22,15 @@ class SystemListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final scannedSystems = ref.watch(scannedSystemProvider);
-    return scannedSystems.when(
-      loading: () => const LoadingSpinner(),
-      error: (error, stack) => Text(error.toString()),
-      data: (systems) {
-        final system = systems[ref.watch(selectedSystemIndexProvider)];
-        return LauncherScaffold(
-          backgroundImage:
-              FileImage(services<MediaManager>().getSystemImageFile(system)),
-          body: CommandWrapper(
+    final system = ref.watch(selectedSystemProvider);
+    return LauncherScaffold(
+      backgroundImage: system != null
+          ? FileImage(services<MediaManager>().getSystemImageFile(system))
+          : null,
+      body: FutureWidget(
+        future: ref.watch(scannedSystemProvider.future),
+        builder: (context, systems) {
+          return CommandWrapper(
             commands: [
               Command(
                 button: CommandButton.a,
@@ -64,11 +64,13 @@ class SystemListScreen extends ConsumerWidget {
                 // }
               },
               onA: () => _openGameListScreen(context),
-              child: const SystemPageView(),
+              child: SystemPageView(
+                systemList: systems,
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -83,7 +85,10 @@ class SystemListScreen extends ConsumerWidget {
 class SystemPageView extends ConsumerStatefulWidget {
   const SystemPageView({
     Key? key,
+    required this.systemList,
   }) : super(key: key);
+
+  final List<System> systemList;
 
   @override
   ConsumerState<SystemPageView> createState() => _SystemPageViewState();
@@ -93,54 +98,61 @@ class _SystemPageViewState extends ConsumerState<SystemPageView> {
   late final _controller = ClickyListScrollController();
 
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final currentSystemIndex = ref.watch(selectedSystemIndexProvider);
-    final scannedSystems = ref.watch(scannedSystemProvider);
+    //
+    // ref.listen(selectedSystemIndexProvider, (prevIndex, newIndex) {
+    //   _controller.jumpToIndex(newIndex);
+    // });
 
-    ref.listen(selectedSystemIndexProvider, (prevIndex, newIndex) {
-      _controller.jumpToIndex(newIndex);
-    });
-
-    return scannedSystems.when(
-      error: (error, stack) => Text('$error\n$stack'),
-      loading: () => const LoadingSpinner(),
-      data: (systems) {
-        return Column(
-          children: [
-            Expanded(
-              flex: 6,
-              child: GameSystemDetail(
-                system: systems[currentSystemIndex],
-              ),
-            ),
-            Expanded(
-              flex: 6,
-              child: ClickyListView(
-                controller: _controller,
-                itemCount: systems.length,
-                itemBuilder: (context, index, selected) {
-                  return SystemItemTile(
-                    selected: selected,
-                    onTap: () => _openGameListScreen(context, index),
-                    system: systems[index],
-                  );
-                },
-                listItemSize: 200,
-                scrollDirection: Axis.horizontal,
-                onChanged: (index) {
-                  ref.read(selectedSystemIndexProvider.state).state = index;
-                },
-              ),
-            ),
-            const Spacer(flex: 2)
-          ],
-        );
-      },
+    return Column(
+      children: [
+        Expanded(
+          flex: 6,
+          child: GameSystemDetail(
+            system: ref.watch(selectedSystemProvider),
+          ),
+        ),
+        Expanded(
+          flex: 6,
+          child: ClickyListView(
+            controller: _controller,
+            initialIndex: () {
+              final selectedSystem = ref.read(selectedSystemProvider);
+              if (selectedSystem != null) {
+                return widget.systemList.indexOf(selectedSystem);
+              } else {
+                return 0;
+              }
+            }(),
+            itemCount: widget.systemList.length,
+            itemBuilder: (context, index, selected) {
+              return SystemItemTile(
+                selected: selected,
+                onTap: () =>
+                    _openGameListScreen(context, widget.systemList[index]),
+                system: widget.systemList[index],
+              );
+            },
+            listItemSize: 200,
+            scrollDirection: Axis.horizontal,
+            onChanged: (index) {
+              ref.read(selectedSystemProvider.state).state =
+                  widget.systemList[index];
+            },
+          ),
+        ),
+        const Spacer(flex: 2)
+      ],
     );
   }
 
-  void _openGameListScreen(BuildContext context, int index) {
-    ref.read(selectedSystemIndexProvider.state).state = index;
+  void _openGameListScreen(BuildContext context, System system) {
+    ref.read(selectedSystemProvider.state).state = system;
     Navigate.to(
       (context) => const GameListScreen(),
       direction: Axis.vertical,
@@ -193,12 +205,15 @@ class GameSystemDetail extends ConsumerWidget {
     required this.system,
   }) : super(key: key);
 
-  final System system;
+  final System? system;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
-    final gameList = ref.watch(gameLibraryProvider(system));
+    if (system == null) {
+      return const SizedBox();
+    }
+    final gameList = ref.watch(gameLibraryProvider(system!));
     return Container(
       width: 600,
       margin: const EdgeInsets.all(24),
@@ -210,12 +225,12 @@ class GameSystemDetail extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  system.producer,
+                  system!.producer,
                   style: textTheme.titleMedium,
                   textAlign: TextAlign.end,
                 ),
                 Text(
-                  system.name,
+                  system!.name,
                   style: textTheme.headlineMedium,
                   textAlign: TextAlign.end,
                 ),

@@ -14,12 +14,14 @@ class ClickyListView extends StatefulWidget {
     required this.listItemSize,
     this.scrollDirection = Axis.vertical,
     this.controller,
+    this.onListEmpty,
   }) : super(key: key);
 
   final Widget Function(BuildContext context, int index, bool seleced)
       itemBuilder;
   final int itemCount;
   final ValueChanged<int> onChanged;
+  final VoidCallback? onListEmpty;
   final double sideGap;
   final int initialIndex;
   final double listItemSize;
@@ -37,7 +39,22 @@ class _ClickyListViewState extends State<ClickyListView> {
     widget.controller?._addState(this);
   }
 
-  late int currentIndex = widget.initialIndex;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (widget.itemCount > 0) {
+      Future.microtask(() {
+        _hardSetIndex(currentIndex);
+      });
+    } else {
+      Future.microtask(() {
+        widget.onListEmpty?.call();
+      });
+    }
+  }
+
+  late int currentIndex = widget.initialIndex.clamp(0, widget.itemCount);
 
   late final _scrollController = ScrollController(
     initialScrollOffset: widget.initialIndex * widget.listItemSize,

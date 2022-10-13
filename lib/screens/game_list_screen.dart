@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:rglauncher/data/models.dart';
 import 'package:rglauncher/features/media_manager.dart';
+import 'package:rglauncher/features/notification_manager.dart';
 import 'package:rglauncher/widgets/async_widget.dart';
 import 'package:rglauncher/widgets/clicky_list_view.dart';
 import 'package:rglauncher/widgets/fading_edge.dart';
@@ -407,11 +408,30 @@ class _GameListViewState extends ConsumerState<GameListView> {
         Command(
           button: CommandButton.x,
           label: 'Options',
-          onTap: () {
+          onTap: () async {
             final game = ref.read(selectedGameProvider);
             if (game != null) {
               final db = services<Database>();
-              db.toggleFavorite(game);
+              final notifier = ref.read(notificationProvider.notifier);
+
+              final added = await db.toggleFavorite(game);
+              if (added) {
+                notifier.set(
+                  const NotificationMessage(
+                    label: 'Added to favorites',
+                    status: NotificationStatus.success,
+                    icon: Icon(Icons.favorite_rounded),
+                  ),
+                );
+              } else {
+                notifier.set(
+                  const NotificationMessage(
+                    label: 'Removed from favorites',
+                    status: NotificationStatus.success,
+                    icon: Icon(Icons.favorite_outline_rounded),
+                  ),
+                );
+              }
               HapticFeedback.mediumImpact();
             }
           },

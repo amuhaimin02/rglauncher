@@ -30,7 +30,7 @@ class AllAppsScreen extends ConsumerWidget {
           value: ref.watch(installedAppsProvider),
           data: (allApps) {
             return GridView.count(
-              padding: EdgeInsets.all(64),
+              padding: const EdgeInsets.all(64),
               crossAxisCount: 8,
               childAspectRatio: 0.7,
               children: [

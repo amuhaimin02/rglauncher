@@ -62,18 +62,20 @@ class Database {
         .watch(fireImmediately: true);
   }
 
-  Future<void> toggleFavorite(Game game) async {
+  Future<bool> toggleFavorite(Game game) async {
     await _isar.writeTxn(() async {
       game.isFavorite = !game.isFavorite;
       _isar.games.put(game);
     });
+    return game.isFavorite;
   }
 
-  Future<void> toggleWishlist(Game game) async {
+  Future<bool> toggleWishlist(Game game) async {
     await _isar.writeTxn(() async {
       game.isWishlist = !game.isWishlist;
       _isar.games.put(game);
     });
+    return game.isWishlist;
   }
 
   Future<void> updateLastPlayed(Game game) async {
@@ -83,11 +85,12 @@ class Database {
     });
   }
 
-  Future<void> pinGame(Game game, int pinIndex) async {
+  Future<bool> togglePinGame(Game game, int pinIndex) async {
     await _isar.writeTxn(() async {
       game.pinIndex = pinIndex;
       _isar.games.put(game);
     });
+    return game.isPinned;
   }
 
   Future<void> removePinFromGame(Game game) async {

@@ -13,12 +13,13 @@ class AppLauncher {
 
   Future<void> launchGameUsingEmulator(Game game, Emulator emulator) async {
     final db = services<Database>();
-    db.toggleFavorite(game);
     db.updateLastPlayed(game);
-    db.pinGame(game, 0);
+
     print('Launching $game');
 
     if (Platform.isAndroid) {
+      final contentPath =
+          await AndroidFunctions.convertUriToContentPath(game.fullpath);
       final intent = AndroidIntent(
         action: emulator.isRetroarch ? 'action_main' : 'action_view',
         // action: 'action_main',
@@ -39,10 +40,7 @@ class AppLauncher {
                 'QUITFOCUS': ''
               }
             : null,
-        data: !emulator.isRetroarch
-            ? await AndroidFunctions.convertUriToContentPath(
-                File(game.fullpath).path)
-            : null,
+        data: !emulator.isRetroarch ? contentPath : null,
       );
       await intent.launch();
     }

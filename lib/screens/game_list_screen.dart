@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:rglauncher/data/models.dart';
 import 'package:rglauncher/features/media_manager.dart';
 import 'package:rglauncher/widgets/async_widget.dart';
@@ -36,26 +37,24 @@ class GameListScreen extends ConsumerWidget {
       body: AsyncWidget(
         value: ref.watch(scannedSystemProvider),
         data: (systems) {
-          return LauncherScaffold(
-            body: GameListContent(
-              pageSize: systems.length,
-              initialIndex: () {
-                final selectedSystem = ref.read(selectedSystemProvider);
-                if (selectedSystem != null) {
-                  return systems.indexOf(selectedSystem);
-                } else {
-                  return 0;
-                }
-              }(),
-              getTitle: (index) => systems[index].name,
-              getGameList: (index) =>
-                  ref.watch(gameLibraryProvider(systems[index]).future),
-              onPageChanged: (index) {
-                Future.microtask(() {
-                  ref.read(selectedSystemProvider.state).state = systems[index];
-                });
-              },
-            ),
+          return GameListContent(
+            pageSize: systems.length,
+            initialIndex: () {
+              final selectedSystem = ref.read(selectedSystemProvider);
+              if (selectedSystem != null) {
+                return systems.indexOf(selectedSystem);
+              } else {
+                return 0;
+              }
+            }(),
+            getTitle: (index) => systems[index].name,
+            getGameList: (index) =>
+                ref.watch(gameLibraryProvider(systems[index]).future),
+            onPageChanged: (index) {
+              Future.microtask(() {
+                ref.read(selectedSystemProvider.state).state = systems[index];
+              });
+            },
           );
         },
       ),
@@ -63,7 +62,7 @@ class GameListScreen extends ConsumerWidget {
   }
 }
 
-class SingleGameListScreen extends StatelessWidget {
+class SingleGameListScreen extends ConsumerWidget {
   const SingleGameListScreen(
       {Key? key, required this.title, required this.gameList})
       : super(key: key);
@@ -72,11 +71,19 @@ class SingleGameListScreen extends StatelessWidget {
   final List<Game> gameList;
 
   @override
-  Widget build(BuildContext context) {
-    return GameListContent(
-      pageSize: 1,
-      getTitle: (_) => title,
-      getGameList: (_) async => gameList,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedGame = ref.watch(selectedGameProvider);
+    return LauncherScaffold(
+      backgroundImage: selectedGame != null
+          ? FileImage(
+              services<MediaManager>().getGameMediaFile(selectedGame),
+            )
+          : null,
+      body: GameListContent(
+        pageSize: 1,
+        getTitle: (_) => title,
+        getGameList: (_) async => gameList,
+      ),
     );
   }
 }
@@ -253,6 +260,7 @@ class _GameListContentState extends ConsumerState<GameListContent> {
                             if (snapshot.data != null) {
                               return GameListView(
                                 gameList: snapshot.data!,
+                                showSystemCode: !widget.paginated,
                               );
                             } else {
                               return const LoadingSpinner();
@@ -379,9 +387,11 @@ class GameListView extends ConsumerStatefulWidget {
   const GameListView({
     Key? key,
     required this.gameList,
+    this.showSystemCode = true,
   }) : super(key: key);
 
   final List<Game> gameList;
+  final bool showSystemCode;
 
   @override
   ConsumerState<GameListView> createState() => _GameListViewState();
@@ -467,6 +477,7 @@ class _GameListViewState extends ConsumerState<GameListView> {
                 onTap: () => _onListTap(context, index),
                 selected: selected,
                 game: widget.gameList[index],
+                showSystemCode: widget.showSystemCode,
               );
             },
             onChanged: (index) {
@@ -509,11 +520,13 @@ class GameListTile extends StatelessWidget {
     required this.onTap,
     required this.game,
     this.selected = false,
+    this.showSystemCode = false,
   }) : super(key: key);
 
   final VoidCallback onTap;
   final Game game;
   final bool selected;
+  final bool showSystemCode;
 
   @override
   Widget build(BuildContext context) {
@@ -538,11 +551,35 @@ class GameListTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (game.isFavorite)
+              if (game.isFavorite) ...[
+                const SizedBox(width: 4),
                 const Icon(
                   Icons.favorite,
                   color: Colors.red,
                 )
+              ],
+              if (game.isWishlist) ...[
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.bookmark,
+                  color: Colors.amber,
+                )
+              ],
+              if (game.isPinned) ...[
+                const SizedBox(width: 4),
+                const Icon(
+                  MdiIcons.pin,
+                  color: Colors.grey,
+                )
+              ],
+              if (showSystemCode) ...[
+                const SizedBox(width: 8),
+                SmallLabel(
+                  backgroundColor: Colors.grey.withOpacity(0.7),
+                  textColor: Colors.white,
+                  text: Text(game.systemCode),
+                )
+              ],
             ],
           ),
         ),

@@ -9,6 +9,7 @@ import 'package:rglauncher/data/providers.dart';
 import 'package:rglauncher/features/library_manager.dart';
 import 'package:rglauncher/features/media_manager.dart';
 import 'package:rglauncher/features/services.dart';
+import 'package:rglauncher/screens/all_apps_screen.dart';
 import 'package:rglauncher/screens/system_list_screen.dart';
 import 'package:rglauncher/utils/extensions.dart';
 import 'package:rglauncher/widgets/command.dart';
@@ -46,7 +47,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final allApps = ref.watch(installedAppsProvider);
+    final pinnedApps = ref.watch(pinnedAppsProvider);
     final pinnedGames = ref.watch(pinnedGamesProvider);
     final continueGame = ref.watch(continueGameProvider);
 
@@ -242,7 +243,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 onTap: () => _openSystemListScreen(context),
               ),
               const TwoLineDivider(),
-              ...allApps.when(
+              ...pinnedApps.when(
                 error: (error, stack) => [],
                 loading: () => [
                   const TwoLineGridItem(child: LoadingTile()),
@@ -262,11 +263,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ];
                 },
               ),
-              const TwoLineGridItem(
-                child: MenuTile(
+              TwoLineGridItem(
+                child: const MenuTile(
                   label: 'All apps',
                   icon: Icons.apps_rounded,
                 ),
+                onTap: () => Navigate.to((context) => const AllAppsScreen()),
               ),
               const TwoLineGridItem(child: AddMenuTile()),
             ],
@@ -284,7 +286,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   void _openSystemListScreen(BuildContext context) {
     Navigate.to(
       (context) => const SystemListScreen(),
-      direction: Axis.vertical,
     );
   }
 

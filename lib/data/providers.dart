@@ -1,4 +1,5 @@
 import 'package:battery_plus/battery_plus.dart';
+import 'package:collection/collection.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:device_apps/device_apps.dart';
 import 'package:flutter/material.dart';
@@ -123,8 +124,13 @@ final installedAppsProvider = FutureProvider((ref) async {
     includeSystemApps: true,
     includeAppIcons: true,
   );
-  appList.shuffle();
-  return appList.take(6).cast<ApplicationWithIcon>();
+  return appList.cast<ApplicationWithIcon>().sortedBy((a) => a.appName);
+});
+
+final pinnedAppsProvider = FutureProvider((ref) async {
+  final allApps = await ref.watch(installedAppsProvider.future);
+  final pinnedApps = List.of(allApps)..shuffle();
+  return pinnedApps.take(6);
 });
 
 final notificationProvider =

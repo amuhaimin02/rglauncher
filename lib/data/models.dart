@@ -82,6 +82,9 @@ class Game {
   @Index()
   int? pinIndex;
 
+  @ignore
+  bool get isPinned => pinIndex != null;
+
   @Index(unique: true, replace: true)
   String get fullpath => path.join(filepath, filename);
 

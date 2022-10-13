@@ -54,12 +54,12 @@ class Database {
     return _isar.games.where().sortByName().findAll();
   }
 
-  Future<List<Game>> getGamesBySystem(System system) async {
+  Stream<List<Game>> getGamesBySystem(System system) {
     return _isar.games
         .filter()
         .systemCodeEqualTo(system.code)
         .sortByName()
-        .findAll();
+        .watch(fireImmediately: true);
   }
 
   Future<void> toggleFavorite(Game game) async {
@@ -126,41 +126,47 @@ class Database {
         .findAll();
   }
 
-  Future<List<Game>> getFavoritedGames() {
-    return _isar.games.filter().isFavoriteEqualTo(true).findAll();
+  Stream<List<Game>> getFavoritedGames() {
+    return _isar.games
+        .filter()
+        .isFavoriteEqualTo(true)
+        .watch(fireImmediately: true);
   }
 
-  Future<List<Game>> getWishlistedGames() {
-    return _isar.games.filter().isWishlistEqualTo(true).findAll();
+  Stream<List<Game>> getWishlistedGames() {
+    return _isar.games
+        .filter()
+        .isWishlistEqualTo(true)
+        .watch(fireImmediately: true);
   }
 
-  Future<List<Game>> getRecentGames() {
+  Stream<List<Game>> getRecentGames() {
     return _isar.games
         .filter()
         .timeLastPlayedIsNotNull()
         .sortByTimeLastPlayedDesc()
         .limit(100)
-        .findAll();
+        .watch(fireImmediately: true);
   }
 
-  Future<List<Game>> getNewlyAddedGames() {
+  Stream<List<Game>> getNewlyAddedGames() {
     final pastRecentDays =
-    DateTime.now().subtract(const Duration(days: daysConsideredRecent));
+        DateTime.now().subtract(const Duration(days: daysConsideredRecent));
     return _isar.games
         .filter()
         .timeAddedGreaterThan(pastRecentDays)
         .sortByTimeAddedDesc()
         .limit(100)
-        .findAll();
+        .watch(fireImmediately: true);
   }
 
-  Future<List<Game>> getPinnedGames() {
+  Stream<List<Game>> getPinnedGames() {
     return _isar.games
         .filter()
         .pinIndexIsNotNull()
         .sortByPinIndexDesc()
         .limit(10)
-        .findAll();
+        .watch(fireImmediately: true);
   }
 
   Stream<Game?> getLastPlayedGame() {

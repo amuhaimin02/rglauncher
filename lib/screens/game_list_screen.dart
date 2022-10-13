@@ -1,17 +1,19 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rglauncher/data/models.dart';
 import 'package:rglauncher/features/media_manager.dart';
+import 'package:rglauncher/widgets/async_widget.dart';
 import 'package:rglauncher/widgets/clicky_list_view.dart';
 import 'package:rglauncher/widgets/fading_edge.dart';
-import 'package:rglauncher/widgets/future_widget.dart';
 import 'package:rglauncher/widgets/launcher_scaffold.dart';
 import 'package:rglauncher/widgets/loading_spinner.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
 import '../data/configs.dart';
+import '../data/database.dart';
 import '../data/providers.dart';
 import '../features/app_launcher.dart';
 import '../features/services.dart';
@@ -31,9 +33,9 @@ class GameListScreen extends ConsumerWidget {
               services<MediaManager>().getGameMediaFile(selectedGame),
             )
           : null,
-      body: FutureWidget(
-        future: ref.watch(scannedSystemProvider.future),
-        builder: (context, systems) {
+      body: AsyncWidget(
+        value: ref.watch(scannedSystemProvider),
+        data: (systems) {
           return LauncherScaffold(
             body: GameListContent(
               pageSize: systems.length,
@@ -84,11 +86,9 @@ class FavoritedGameListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final favoritedGames = ref.watch(favoritedGamesProvider);
-    return favoritedGames.when(
+    return AsyncWidget(
+      value: ref.watch(favoritedGamesProvider),
       data: (list) => SingleGameListScreen(title: 'Favorite', gameList: list),
-      error: (e, s) => Text(e.toString()),
-      loading: () => const LoadingSpinner(),
     );
   }
 }
@@ -98,11 +98,9 @@ class WishlistedGamesListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final wishlistedGames = ref.watch(wishlistedGamesProvider);
-    return wishlistedGames.when(
+    return AsyncWidget(
+      value: ref.watch(wishlistedGamesProvider),
       data: (list) => SingleGameListScreen(title: 'Wishlist', gameList: list),
-      error: (e, s) => Text(e.toString()),
-      loading: () => const LoadingSpinner(),
     );
   }
 }
@@ -112,11 +110,9 @@ class RecentGameListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final recentGames = ref.watch(recentGamesProvider);
-    return recentGames.when(
+    return AsyncWidget(
+      value: ref.watch(recentGamesProvider),
       data: (list) => SingleGameListScreen(title: 'Recent', gameList: list),
-      error: (e, s) => Text(e.toString()),
-      loading: () => const LoadingSpinner(),
     );
   }
 }
@@ -126,12 +122,10 @@ class NewlyAddedListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final newGames = ref.watch(newlyAddedGamesProvider);
-    return newGames.when(
+    return AsyncWidget(
+      value: ref.watch(newlyAddedGamesProvider),
       data: (list) =>
           SingleGameListScreen(title: 'Newly added', gameList: list),
-      error: (e, s) => Text(e.toString()),
-      loading: () => const LoadingSpinner(),
     );
   }
 }
@@ -203,63 +197,82 @@ class _GameListContentState extends ConsumerState<GameListContent> {
     // }
 
     final textTheme = Theme.of(context).textTheme;
-    return Row(
-      children: [
-        Expanded(
-          flex: 6,
-          child: FadingEdge(
-            direction: Axis.horizontal,
-            fadingEdgeSize: 8,
-            child: PageView.builder(
-              controller: widget.paginated ? _pageController : null,
-              itemCount: widget.pageSize,
-              itemBuilder: (context, index) {
-                return FutureBuilder<List<Game>>(
-                  future: widget.getGameList(index),
-                  builder: (context, snapshot) {
-                    return Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(20.0) -
-                              const EdgeInsets.only(bottom: 20),
-                          child: Row(
-                            children: [
-                              Text(
-                                widget.getTitle(index),
-                                style: textTheme.headlineSmall!
-                                    .copyWith(fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(width: 12),
-                              if (snapshot.data != null)
-                                SmallLabel(
-                                  text: Text(snapshot.data!.length.toString()),
-                                )
-                            ],
+    return GestureDetector(
+      onHorizontalDragUpdate: (details) {
+        // Note: Sensitivity is integer used when you don't want to mess up vertical drag
+        int sensitivity = 1;
+        if (details.delta.dx > sensitivity) {
+          _pageController.previousPage(
+            duration: defaultAnimationDuration,
+            curve: defaultAnimationCurve,
+          );
+        } else if (details.delta.dx < -sensitivity) {
+          _pageController.nextPage(
+            duration: defaultAnimationDuration,
+            curve: defaultAnimationCurve,
+          );
+        }
+      },
+      child: Row(
+        children: [
+          Expanded(
+            flex: 6,
+            child: FadingEdge(
+              direction: Axis.horizontal,
+              fadingEdgeSize: 8,
+              child: PageView.builder(
+                controller: widget.paginated ? _pageController : null,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: widget.pageSize,
+                itemBuilder: (context, index) {
+                  return FutureBuilder<List<Game>>(
+                    future: widget.getGameList(index),
+                    builder: (context, snapshot) {
+                      return Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(20.0) -
+                                const EdgeInsets.only(bottom: 20),
+                            child: Row(
+                              children: [
+                                Text(
+                                  widget.getTitle(index),
+                                  style: textTheme.headlineSmall!
+                                      .copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(width: 12),
+                                if (snapshot.data != null)
+                                  SmallLabel(
+                                    text:
+                                        Text(snapshot.data!.length.toString()),
+                                  )
+                              ],
+                            ),
                           ),
-                        ),
-                        Expanded(child: () {
-                          if (snapshot.data != null) {
-                            return GameListView(
-                              gameList: snapshot.data!,
-                            );
-                          } else {
-                            return const LoadingSpinner();
-                          }
-                        }()),
-                      ],
-                    );
-                  },
-                );
-              },
-              onPageChanged: widget.onPageChanged,
+                          Expanded(child: () {
+                            if (snapshot.data != null) {
+                              return GameListView(
+                                gameList: snapshot.data!,
+                              );
+                            } else {
+                              return const LoadingSpinner();
+                            }
+                          }()),
+                        ],
+                      );
+                    },
+                  );
+                },
+                onPageChanged: widget.onPageChanged,
+              ),
             ),
           ),
-        ),
-        const Expanded(
-          flex: 5,
-          child: GameDetailPane(),
-        ),
-      ],
+          const Expanded(
+            flex: 5,
+            child: GameDetailPane(),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -381,7 +394,18 @@ class _GameListViewState extends ConsumerState<GameListView> {
   Widget build(BuildContext context) {
     return CommandWrapper(
       commands: [
-        Command(button: CommandButton.x, label: 'Options', onTap: () {}),
+        Command(
+          button: CommandButton.x,
+          label: 'Options',
+          onTap: () {
+            final game = ref.read(selectedGameProvider);
+            if (game != null) {
+              final db = services<Database>();
+              db.toggleFavorite(game);
+              HapticFeedback.mediumImpact();
+            }
+          },
+        ),
         Command(
           button: CommandButton.a,
           label: 'Open',

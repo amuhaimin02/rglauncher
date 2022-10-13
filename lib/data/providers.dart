@@ -69,7 +69,7 @@ final scannedSystemProvider = FutureProvider((ref) async {
 });
 
 final gameLibraryProvider =
-    FutureProvider.family<List<Game>, System>((ref, system) async {
+    StreamProvider.family<List<Game>, System>((ref, system) {
   final db = services<Database>();
   return db.getGamesBySystem(system);
 });
@@ -84,27 +84,27 @@ final allGamesProvider = FutureProvider((ref) async {
   return allGames;
 });
 
-final favoritedGamesProvider = FutureProvider((ref) async {
+final favoritedGamesProvider = StreamProvider((ref) {
   final db = services<Database>();
   return db.getFavoritedGames();
 });
 
-final wishlistedGamesProvider = FutureProvider((ref) async {
+final wishlistedGamesProvider = StreamProvider((ref) {
   final db = services<Database>();
   return db.getWishlistedGames();
 });
 
-final recentGamesProvider = FutureProvider((ref) async {
+final recentGamesProvider = StreamProvider((ref) {
   final db = services<Database>();
   return db.getRecentGames();
 });
 
-final newlyAddedGamesProvider = FutureProvider((ref) async {
+final newlyAddedGamesProvider = StreamProvider((ref) {
   final db = services<Database>();
   return db.getNewlyAddedGames();
 });
 
-final pinnedGamesProvider = FutureProvider((ref) async {
+final pinnedGamesProvider = StreamProvider((ref) {
   final db = services<Database>();
   return db.getPinnedGames();
 });

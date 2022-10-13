@@ -6,7 +6,7 @@ import 'package:rglauncher/features/media_manager.dart';
 import 'package:rglauncher/features/services.dart';
 import 'package:rglauncher/screens/game_list_screen.dart';
 import 'package:rglauncher/widgets/clicky_list_view.dart';
-import 'package:rglauncher/widgets/future_widget.dart';
+import 'package:rglauncher/widgets/async_widget.dart';
 import 'package:rglauncher/widgets/loading_spinner.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
@@ -27,9 +27,9 @@ class SystemListScreen extends ConsumerWidget {
       backgroundImage: system != null
           ? FileImage(services<MediaManager>().getSystemImageFile(system))
           : null,
-      body: FutureWidget(
-        future: ref.watch(scannedSystemProvider.future),
-        builder: (context, systems) {
+      body: AsyncWidget(
+        value: ref.watch(scannedSystemProvider),
+        data: (systems) {
           return CommandWrapper(
             commands: [
               Command(

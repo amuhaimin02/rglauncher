@@ -27,7 +27,7 @@ Future<void> showMenuOptions({
           borderRadius: BorderRadius.circular(16),
         ),
         child: SizedBox(
-          width: 360,
+          width: 400,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -45,20 +45,23 @@ Future<void> showMenuOptions({
               ],
               Expanded(
                 child: ListView(
+                  padding: EdgeInsets.zero,
                   shrinkWrap: true,
-                  children: [
-                    for (final option in options)
-                      ListTile(
-                        title: Text(option.title),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 4),
-                        trailing: option.icon,
-                        onTap: () {
-                          Navigator.pop(context);
-                          option.onTap();
-                        },
-                      ),
-                  ],
+                  children: ListTile.divideTiles(
+                    tiles: [
+                      for (final option in options)
+                        ListTile(
+                          title: Text(option.title),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 4),
+                          trailing: option.icon,
+                          onTap: () {
+                            Navigator.pop(context);
+                            option.onTap();
+                          },
+                        ),
+                    ],
+                  ).toList(),
                 ),
               ),
             ],

@@ -2,7 +2,6 @@ import 'package:device_apps/device_apps.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:rglauncher/data/configs.dart';
 import 'package:rglauncher/data/providers.dart';
@@ -17,10 +16,10 @@ import 'package:rglauncher/widgets/gamepad_listener.dart';
 import 'package:rglauncher/widgets/launcher_scaffold.dart';
 import 'package:rglauncher/widgets/two_line_grid_view.dart';
 
-import '../data/models.dart';
 import '../features/app_launcher.dart';
 import '../utils/navigate.dart';
 import '../widgets/large_clock.dart';
+import '../widgets/shadowed_text.dart';
 import 'game_list_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -184,7 +183,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                   return [
                     for (final game in gamesList)
                       TwoLineGridItem(
-                        child: GameTile(game: game),
+                        child: MenuTile(
+                          image: FileImage(
+                              services<MediaManager>().getGameBoxArtFile(game)),
+                        ),
                         onTap: () async {
                           final emulators = await ref.read(
                               systemEmulatorsProvider(game.systemCode).future);
@@ -324,11 +326,10 @@ class SelectionWrapper extends ConsumerWidget {
 }
 
 class MenuTile extends StatelessWidget {
-  const MenuTile(
-      {Key? key, required this.label, this.icon, this.image, this.sublabel})
+  const MenuTile({Key? key, this.label, this.icon, this.image, this.sublabel})
       : super(key: key);
 
-  final String label;
+  final String? label;
   final IconData? icon;
   final ImageProvider? image;
   final String? sublabel;
@@ -347,38 +348,44 @@ class MenuTile extends StatelessWidget {
             ? BoxDecoration(
                 image: DecorationImage(
                   image: image!,
-                  opacity: 0.6,
+                  opacity: 1,
                   fit: BoxFit.cover,
                 ),
               )
             : null,
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-        child: Stack(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        child: ShadowedText(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+            child: Stack(
               children: [
-                Text(label, style: textTheme.titleLarge),
-                if (sublabel != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    sublabel!,
-                    style: textTheme.labelLarge,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (label != null) ...[
+                      Text(label!, style: textTheme.titleLarge),
+                    ],
+                    if (sublabel != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        sublabel!,
+                        style: textTheme.labelLarge,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+                Align(
+                  alignment: Alignment.bottomRight,
+                  child: Icon(
+                    icon,
+                    size: 56,
+                    color: Colors.white38,
                   ),
-                ],
+                ),
               ],
             ),
-            Align(
-              alignment: Alignment.bottomRight,
-              child: Icon(
-                icon,
-                size: 56,
-                color: Colors.white38,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -467,39 +474,6 @@ class LoadingTile extends StatelessWidget {
         height: 36,
         child: CircularProgressIndicator(
           color: Colors.white54,
-        ),
-      ),
-    );
-  }
-}
-
-class GameTile extends StatelessWidget {
-  const GameTile({Key? key, required this.game}) : super(key: key);
-
-  final Game game;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        image: DecorationImage(
-            image:
-                NetworkImage('https://picsum.photos/300/300?r=${game.name}')),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(width: 2, color: Colors.white38),
-      ),
-      child: const Align(
-        alignment: Alignment.bottomRight,
-        child: Material(
-          color: Colors.black,
-          borderRadius: BorderRadius.only(
-            bottomRight: Radius.circular(16),
-            topLeft: Radius.circular(16),
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(8.0),
-            child: Icon(MdiIcons.pin, size: 20, color: Colors.white),
-          ),
         ),
       ),
     );

@@ -78,7 +78,7 @@ class SingleGameListScreen extends ConsumerWidget {
     return LauncherScaffold(
       backgroundImage: selectedGame != null
           ? FileImage(
-        services<MediaManager>().getGameBoxArtFile(selectedGame),
+              services<MediaManager>().getGameBoxArtFile(selectedGame),
             )
           : null,
       body: GameListContent(

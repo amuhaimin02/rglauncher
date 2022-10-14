@@ -12,7 +12,7 @@ class NotificationOverlay extends ConsumerWidget {
     final message = ref.watch(notificationProvider);
 
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.all(24),
       child: AnimatedSwitcher(
         duration: defaultAnimationDuration,
         switchInCurve: defaultAnimationCurve,
@@ -44,30 +44,38 @@ class NotificationOverlay extends ConsumerWidget {
           );
         },
         child: Builder(
-          key: ValueKey(message),
+          key: ValueKey(message?.status),
           builder: (context) {
             if (message == null) {
               return const SizedBox();
             }
             return Material(
-              color: () {
-                switch (message.status) {
-                  case NotificationStatus.neutral:
-                  case NotificationStatus.inProgress:
-                  case NotificationStatus.success:
-                    return Colors.grey.shade800;
-                  case NotificationStatus.failed:
-                    return Colors.red;
-                  case NotificationStatus.warning:
-                    return Colors.amber;
-                }
-              }(),
+              color: Colors.grey.shade800,
               elevation: 2,
+              clipBehavior: Clip.antiAlias,
               borderRadius: BorderRadius.circular(8),
               child: Container(
                 width: 360,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(
+                        color: () {
+                          switch (message.status) {
+                            case NotificationStatus.neutral:
+                            case NotificationStatus.inProgress:
+                              return Colors.teal;
+                            case NotificationStatus.success:
+                              return Colors.green;
+                            case NotificationStatus.failed:
+                              return Colors.red;
+                            case NotificationStatus.warning:
+                              return Colors.amber;
+                          }
+                        }(),
+                        width: 4),
+                  ),
+                ),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                 child: Row(
                   children: [
                     Expanded(

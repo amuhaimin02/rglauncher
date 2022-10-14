@@ -7,7 +7,7 @@ import 'package:rglauncher/utils/debouncer.dart';
 class NotificationManager extends StateNotifier<NotificationMessage?> {
   NotificationManager() : super(null);
 
-  final _debouncer = Debouncer(const Duration(seconds: 2));
+  final _debouncer = Debouncer(const Duration(milliseconds: 1500));
 
   Future<void> runTask({
     required FutureOr<void> Function(TaskUpdater) task,

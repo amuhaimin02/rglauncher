@@ -6,18 +6,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:rglauncher/data/models.dart';
 import 'package:rglauncher/features/media_manager.dart';
-import 'package:rglauncher/features/notification_manager.dart';
 import 'package:rglauncher/widgets/async_widget.dart';
 import 'package:rglauncher/widgets/clicky_list_view.dart';
 import 'package:rglauncher/widgets/fading_edge.dart';
 import 'package:rglauncher/widgets/launcher_scaffold.dart';
 import 'package:rglauncher/widgets/loading_spinner.dart';
+import 'package:rglauncher/widgets/menu_options_dialog.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
 import '../data/configs.dart';
 import '../data/database.dart';
 import '../data/providers.dart';
 import '../features/app_launcher.dart';
+import '../features/notification_manager.dart';
 import '../features/services.dart';
 import '../utils/navigate.dart';
 import '../widgets/command.dart';
@@ -411,28 +412,52 @@ class _GameListViewState extends ConsumerState<GameListView> {
           onTap: () async {
             final game = ref.read(selectedGameProvider);
             if (game != null) {
-              final db = services<Database>();
-              final notifier = ref.read(notificationProvider.notifier);
-
-              final added = await db.toggleFavorite(game);
-              if (added) {
-                notifier.set(
-                  const NotificationMessage(
-                    label: 'Added to favorites',
-                    status: NotificationStatus.success,
-                    icon: Icon(Icons.favorite_rounded),
+              showMenuOptions(
+                context: context,
+                title: game.name,
+                options: [
+                  MenuOption(
+                    title: 'View game details',
+                    icon: const Icon(Icons.info),
+                    onTap: () async {},
                   ),
-                );
-              } else {
-                notifier.set(
-                  const NotificationMessage(
-                    label: 'Removed from favorites',
-                    status: NotificationStatus.success,
-                    icon: Icon(Icons.favorite_outline_rounded),
+                  MenuOption(
+                    title: !game.isFavorite
+                        ? 'Add to favorites'
+                        : 'Remove from favorites',
+                    icon: !game.isFavorite
+                        ? const Icon(MdiIcons.heart)
+                        : const Icon(MdiIcons.heartOff),
+                    onTap: () => _toggleFavorite(game),
                   ),
-                );
-              }
-              HapticFeedback.mediumImpact();
+                  MenuOption(
+                    title: !game.isWishlist
+                        ? 'Add to wishlist'
+                        : 'Remove from wishlist',
+                    icon: !game.isWishlist
+                        ? const Icon(MdiIcons.bookmark)
+                        : const Icon(MdiIcons.bookmarkOff),
+                    onTap: () => _toggleWishlist(game),
+                  ),
+                  MenuOption(
+                    title: !game.isPinned ? 'Pin game' : 'Unpin game',
+                    icon: !game.isPinned
+                        ? const Icon(MdiIcons.pin)
+                        : const Icon(MdiIcons.pinOff),
+                    onTap: () => _togglePin(game),
+                  ),
+                  MenuOption(
+                    title: 'Change this game\'s settings',
+                    icon: const Icon(Icons.games),
+                    onTap: () async {},
+                  ),
+                  MenuOption(
+                    title: 'Change systems settings',
+                    icon: const Icon(Icons.videogame_asset_rounded),
+                    onTap: () async {},
+                  ),
+                ],
+              );
             }
           },
         ),
@@ -531,6 +556,81 @@ class _GameListViewState extends ConsumerState<GameListView> {
       game,
       emulators.first,
     );
+  }
+
+  Future<void> _toggleFavorite(Game game) async {
+    final db = services<Database>();
+    final notifier = ref.read(notificationProvider.notifier);
+
+    final added = await db.toggleFavorite(game);
+    if (added) {
+      notifier.set(
+        const NotificationMessage(
+          label: 'Added to favorites',
+          status: NotificationStatus.success,
+          icon: Icon(Icons.favorite_rounded),
+        ),
+      );
+    } else {
+      notifier.set(
+        const NotificationMessage(
+          label: 'Removed from favorites',
+          status: NotificationStatus.success,
+          icon: Icon(Icons.favorite_outline_rounded),
+        ),
+      );
+    }
+    HapticFeedback.mediumImpact();
+  }
+
+  Future<void> _toggleWishlist(Game game) async {
+    final db = services<Database>();
+    final notifier = ref.read(notificationProvider.notifier);
+
+    final added = await db.toggleWishlist(game);
+    if (added) {
+      notifier.set(
+        const NotificationMessage(
+          label: 'Added to wishlist',
+          status: NotificationStatus.success,
+          icon: Icon(Icons.bookmark_rounded),
+        ),
+      );
+    } else {
+      notifier.set(
+        const NotificationMessage(
+          label: 'Removed from wishlist',
+          status: NotificationStatus.success,
+          icon: Icon(Icons.bookmark_outline_rounded),
+        ),
+      );
+    }
+    HapticFeedback.mediumImpact();
+  }
+
+  Future<void> _togglePin(Game game) async {
+    final db = services<Database>();
+    final notifier = ref.read(notificationProvider.notifier);
+
+    final added = await db.togglePinGame(game, 0);
+    if (added) {
+      notifier.set(
+        const NotificationMessage(
+          label: 'Pinned game to home page',
+          status: NotificationStatus.success,
+          icon: Icon(MdiIcons.pin),
+        ),
+      );
+    } else {
+      notifier.set(
+        const NotificationMessage(
+          label: 'Unpinned from home page',
+          status: NotificationStatus.success,
+          icon: Icon(MdiIcons.pinOff),
+        ),
+      );
+    }
+    HapticFeedback.mediumImpact();
   }
 }
 

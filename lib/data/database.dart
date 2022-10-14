@@ -85,9 +85,13 @@ class Database {
     });
   }
 
-  Future<bool> togglePinGame(Game game, int pinIndex) async {
+  Future<bool> togglePinGame(Game game, int? pinIndex) async {
     await _isar.writeTxn(() async {
-      game.pinIndex = pinIndex;
+      if (game.pinIndex == null) {
+        game.pinIndex = pinIndex;
+      } else {
+        game.pinIndex = null;
+      }
       _isar.games.put(game);
     });
     return game.isPinned;

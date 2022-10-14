@@ -27,6 +27,9 @@ class ChangeableBackground extends ConsumerWidget {
                     fadeOutDuration: defaultAnimationDuration,
                     image: image,
                     fit: BoxFit.cover,
+                    imageErrorBuilder: (context, error, stack) {
+                      return const SizedBox();
+                    },
                   ),
                 )
               : null,

@@ -51,6 +51,7 @@ dependencies:
   palette_generator: ^0.3.3+2
   isar: *isar_version
   isar_flutter_libs: *isar_version
+  flutter_dotenv: ^5.0.2
 
 
 dev_dependencies:
@@ -83,6 +84,7 @@ flutter:
   #   - images/a_dot_ham.jpeg
   assets:
     - config/
+    - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

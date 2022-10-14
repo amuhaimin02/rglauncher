@@ -1,5 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:isar/isar.dart';
 import 'package:path/path.dart' as path;
+
 part 'models.g.dart';
 
 @collection
@@ -56,6 +59,8 @@ class Emulator {
       executable.substring(executable.indexOf('/') + 1);
 }
 
+final fileExtensionRegex = RegExp(r'\.[\w]+$');
+
 @collection
 class Game {
   Id id = Isar.autoIncrement;
@@ -85,6 +90,9 @@ class Game {
   @ignore
   bool get isPinned => pinIndex != null;
 
+  @ignore
+  String get fileNameNoExtension => filename.replaceAll(fileExtensionRegex, '');
+
   @Index(unique: true, replace: true)
   String get fullpath => path.join(filepath, filename);
 
@@ -104,4 +112,16 @@ class GameMetadata {
   late String description;
 
   late String genre;
+}
+
+class GameMetadataWithImages {
+  final GameMetadata metadata;
+  final Uint8List? boxArtImage;
+  final Uint8List? screenshotImage;
+
+  const GameMetadataWithImages({
+    required this.metadata,
+    this.boxArtImage,
+    this.screenshotImage,
+  });
 }

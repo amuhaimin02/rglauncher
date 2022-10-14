@@ -34,20 +34,33 @@ class MediaManager {
     imageFile.writeAsBytesSync(bytes);
   }
 
-  File getGameMediaFile(Game game) {
-    return File('${game.filepath}/$gameMediaFolderName/${game.filename}.png');
+  File getGameBoxArtFile(Game game) {
+    return File(
+        '${game.filepath}/$gameMediaFolderName/${game.fileNameNoExtension}-thumb.png');
+  }
+
+  File getGameScreenshotFile(Game game) {
+    return File(
+        '${game.filepath}/$gameMediaFolderName/${game.fileNameNoExtension}.png');
   }
 
   bool isGameMediaFileExists(Game game) {
-    return getGameMediaFile(game).existsSync();
+    return getGameBoxArtFile(game).existsSync();
   }
 
   void saveGameMediaFile(Uint8List imageBytes, Game game) {
-    final imageFile = getGameMediaFile(game);
+    final imageFile = getGameBoxArtFile(game);
 
     if (!imageFile.existsSync()) {
       imageFile.createSync(recursive: true);
     }
     imageFile.writeAsBytesSync(imageBytes);
+  }
+
+  void saveFile(Uint8List imageBytes, File file) {
+    if (!file.existsSync()) {
+      file.createSync(recursive: true);
+    }
+    file.writeAsBytesSync(imageBytes);
   }
 }

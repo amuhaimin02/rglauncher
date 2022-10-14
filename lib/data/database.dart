@@ -109,6 +109,9 @@ class Database {
       await _isar.gameMetadatas.put(
         meta..key = game.filename,
       );
+      await _isar.games.put(
+        game..name = meta.title.isNotEmpty ? meta.title : game.filename,
+      );
     });
   }
 

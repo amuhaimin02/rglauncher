@@ -159,7 +159,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                       icon: Icons.play_circle_rounded,
                       image: game != null
                           ? FileImage(
-                              services<MediaManager>().getGameMediaFile(game))
+                              services<MediaManager>().getGameBoxArtFile(game))
                           : null,
                     ),
                     onTap: () async {

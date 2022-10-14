@@ -33,7 +33,7 @@ class GameListScreen extends ConsumerWidget {
     return LauncherScaffold(
       backgroundImage: selectedGame != null
           ? FileImage(
-              services<MediaManager>().getGameMediaFile(selectedGame),
+              services<MediaManager>().getGameScreenshotFile(selectedGame),
             )
           : null,
       body: AsyncWidget(
@@ -78,7 +78,7 @@ class SingleGameListScreen extends ConsumerWidget {
     return LauncherScaffold(
       backgroundImage: selectedGame != null
           ? FileImage(
-              services<MediaManager>().getGameMediaFile(selectedGame),
+        services<MediaManager>().getGameBoxArtFile(selectedGame),
             )
           : null,
       body: GameListContent(
@@ -340,18 +340,32 @@ class GameDetailPane extends ConsumerWidget {
                     minWidth: 120,
                     minHeight: 120,
                   ),
-                  child: game != null
-                      ? Image(
-                          image: FileImage(
-                            services<MediaManager>().getGameMediaFile(game),
-                          ),
-                        )
-                      : Container(
-                          width: 240,
-                          height: 240,
-                          alignment: Alignment.center,
-                          child: const Text('No media'),
+                  child: () {
+                    if (game == null) {
+                      return Container(
+                        width: 240,
+                        height: 240,
+                        alignment: Alignment.center,
+                        child: const Text('No game selected'),
+                      );
+                    }
+                    final imageFile =
+                        services<MediaManager>().getGameBoxArtFile(game);
+                    if (imageFile.existsSync()) {
+                      return Image(
+                        image: FileImage(
+                          services<MediaManager>().getGameBoxArtFile(game),
                         ),
+                      );
+                    } else {
+                      return Container(
+                        width: 240,
+                        height: 240,
+                        alignment: Alignment.center,
+                        child: const Text('No media'),
+                      );
+                    }
+                  }(),
                 ),
               ),
             )

@@ -2,10 +2,11 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:path/path.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:rglauncher/data/database.dart';
-import 'package:rglauncher/features/scraper.dart';
+import 'package:rglauncher/features/media_scraper.dart';
 
 import '../data/models.dart';
 import '../data/typedefs.dart';
@@ -80,6 +81,7 @@ class LibraryManager {
       {
         'mediaManager': services<MediaManager>(),
         'progressPort': progressPort.sendPort,
+        ...dotenv.env
       },
     );
     progressPort.close();
@@ -95,19 +97,35 @@ Future<void> _doScrapeAndStoreGameImages(JsonMap args) async {
   final games = await db.getAllGames();
 
   int gameProcessed = 0;
-  final scraper = DummyScraper();
+  final scraper = ScreenScraperMediaScraper(
+    devId: args['SCREENSCRAPERFR_DEV_ID'],
+    devPassword: args['SCREENSCRAPERFR_DEV_PASSWORD'],
+  );
   for (final game in games) {
     progressPort.send(game.filename);
     // progress?.call(game);
 
-    if (!manager.isGameMediaFileExists(game)) {
-      final imageLink = await scraper.getBoxArtImageLink(game);
-      final meta = await scraper.getGameMetadata(game);
-      final imageBytes = await manager.downloadImage(imageLink);
-      await db.saveGameMetadata(game, meta);
-      manager.saveGameMediaFile(imageBytes, game);
-    } else {
-      // Skipping
+    print('Finding ${game.filename}');
+    if (manager.getGameScreenshotFile(game).existsSync() &&
+        manager.getGameBoxArtFile(game).existsSync()) {
+      print('Skipping');
+      continue;
+    }
+
+    final data = await scraper.find(game, manager);
+    if (data == null) {
+      print('Not found');
+      continue;
+    }
+    print('Found: ${data.metadata.title}');
+
+    await db.saveGameMetadata(game, data.metadata);
+    if (data.boxArtImage != null) {
+      manager.saveFile(data.boxArtImage!, manager.getGameBoxArtFile(game));
+    }
+    if (data.screenshotImage != null) {
+      manager.saveFile(
+          data.screenshotImage!, manager.getGameScreenshotFile(game));
     }
   }
 }

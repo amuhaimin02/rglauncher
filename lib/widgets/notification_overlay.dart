@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rglauncher/data/configs.dart';
 import 'package:rglauncher/data/providers.dart';
 import 'package:rglauncher/features/notification_manager.dart';
+import 'package:rglauncher/widgets/spinning.dart';
 
 class NotificationOverlay extends ConsumerWidget {
   const NotificationOverlay({Key? key}) : super(key: key);
@@ -53,7 +54,7 @@ class NotificationOverlay extends ConsumerWidget {
               color: Colors.grey.shade800,
               elevation: 2,
               clipBehavior: Clip.antiAlias,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(4),
               child: Container(
                 width: 360,
                 decoration: BoxDecoration(
@@ -106,7 +107,9 @@ class NotificationOverlay extends ConsumerWidget {
                       }
                       switch (message.status) {
                         case NotificationStatus.inProgress:
-                          return const Icon(Icons.hourglass_full_rounded);
+                          return const Spinning(
+                            child: Icon(Icons.hourglass_full_rounded),
+                          );
                         case NotificationStatus.success:
                           return const Icon(Icons.done_rounded);
                         case NotificationStatus.failed:

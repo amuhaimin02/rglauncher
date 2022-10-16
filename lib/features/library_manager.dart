@@ -111,7 +111,7 @@ Future<void> _doScrapeAndStoreGameImages(JsonMap args) async {
     print('Finding ${game.filename}');
     if (manager.getGameScreenshotFile(game).existsSync() &&
         manager.getGameBoxArtFile(game).existsSync() &&
-        (await db.getMetadataForGame(game)) != null) {
+        db.getMetadataForGame(game) != null) {
       print('Skipping');
       continue;
     }

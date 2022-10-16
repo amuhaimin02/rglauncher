@@ -57,11 +57,12 @@ final selectedSystemProvider = StateProvider<System?>((ref) => null);
 
 final selectedGameProvider = StateProvider<Game?>((ref) => null);
 
-final selectedGameMetadataProvider = FutureProvider((ref) async {
+final selectedGameMetadataProvider = Provider((ref) {
   final db = services<Database>();
   final game = ref.watch(selectedGameProvider);
   if (game == null) return null;
-  return await db.getMetadataForGame(game);
+  final meta = db.getMetadataForGame(game);
+  return meta;
 });
 
 final scannedSystemProvider = StreamProvider((ref) {

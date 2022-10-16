@@ -1,4 +1,3 @@
-import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 
 Future<void> showMenuDialog({
@@ -15,12 +14,16 @@ Future<void> showMenuDialog({
     barrierDismissible: true,
     barrierLabel: 'Dismiss',
     transitionBuilder: (context, anim1, anim2, child) {
-      return SharedAxisTransition(
-        animation: anim1,
-        secondaryAnimation: anim2,
-        transitionType: SharedAxisTransitionType.scaled,
-        fillColor: Colors.transparent,
-        child: child,
+      final curvedAnim = CurvedAnimation(
+        parent: anim1,
+        curve: Curves.easeOutQuint,
+      );
+      return ScaleTransition(
+        scale: Tween(begin: 0.8, end: 1.0).animate(curvedAnim),
+        child: FadeTransition(
+          opacity: curvedAnim,
+          child: child,
+        ),
       );
     },
     pageBuilder: (context, anim1, anim2) {

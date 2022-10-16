@@ -133,8 +133,8 @@ class Database {
     });
   }
 
-  Future<GameMetadata?> getMetadataForGame(Game game) async {
-    return _isar.gameMetadatas.getByKey(game.metadataKey);
+  GameMetadata? getMetadataForGame(Game game) {
+    return _isar.gameMetadatas.getByKeySync(game.metadataKey);
   }
 
   Future<List<Emulator>> allEmulatorsBySystemCode(String systemCode) async {

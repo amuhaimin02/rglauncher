@@ -654,6 +654,7 @@ class _GameListViewState extends ConsumerState<GameListView> {
 
   void _openGameInfoDialog() {
     final game = ref.read(selectedGameProvider);
+    final meta = ref.read(selectedGameMetadataProvider);
     if (game != null) {
       showMenuDialog(
         context: context,
@@ -676,27 +677,17 @@ class _GameListViewState extends ConsumerState<GameListView> {
             title: const Text('Similarity'),
             subtitle: Text(game.filenameCorrectness.toPercentage()),
           ),
-          AsyncWidget(
-            value: ref.watch(selectedGameMetadataProvider),
-            data: (meta) {
-              return Column(
-                children: [
-                  ListTile(
-                    title: const Text('Release date'),
-                    subtitle:
-                        Text(meta?.releaseDate?.year.toString() ?? '(None)'),
-                  ),
-                  ListTile(
-                    title: const Text('Genre'),
-                    subtitle: Text(meta?.genres?.join(', ') ?? '(None)'),
-                  ),
-                  ListTile(
-                    title: const Text('Description'),
-                    subtitle: Text(meta?.description ?? '(None)'),
-                  ),
-                ],
-              );
-            },
+          ListTile(
+            title: const Text('Release date'),
+            subtitle: Text(meta?.releaseDate?.year.toString() ?? '(None)'),
+          ),
+          ListTile(
+            title: const Text('Genre'),
+            subtitle: Text(meta?.genres?.join(', ') ?? '(None)'),
+          ),
+          ListTile(
+            title: const Text('Description'),
+            subtitle: Text(meta?.description ?? '(None)'),
           ),
           const SizedBox(height: 8),
         ],

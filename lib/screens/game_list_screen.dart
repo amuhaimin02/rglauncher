@@ -6,12 +6,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:rglauncher/data/models.dart';
 import 'package:rglauncher/features/media_manager.dart';
+import 'package:rglauncher/utils/extensions.dart';
 import 'package:rglauncher/widgets/async_widget.dart';
 import 'package:rglauncher/widgets/clicky_list_view.dart';
 import 'package:rglauncher/widgets/fading_edge.dart';
 import 'package:rglauncher/widgets/launcher_scaffold.dart';
 import 'package:rglauncher/widgets/loading_spinner.dart';
-import 'package:rglauncher/widgets/menu_options_dialog.dart';
+import 'package:rglauncher/widgets/menu_dialog.dart';
 import 'package:rglauncher/widgets/small_label.dart';
 
 import '../data/configs.dart';
@@ -423,57 +424,7 @@ class _GameListViewState extends ConsumerState<GameListView> {
         Command(
           button: CommandButton.x,
           label: 'Options',
-          onTap: () async {
-            final game = ref.read(selectedGameProvider);
-            if (game != null) {
-              showMenuOptions(
-                context: context,
-                title: game.name,
-                options: [
-                  MenuOption(
-                    title: 'View game details',
-                    icon: const Icon(Icons.info),
-                    onTap: () async {},
-                  ),
-                  MenuOption(
-                    title: !game.isFavorite
-                        ? 'Add to favorites'
-                        : 'Remove from favorites',
-                    icon: !game.isFavorite
-                        ? const Icon(MdiIcons.heart)
-                        : const Icon(MdiIcons.heartOff),
-                    onTap: () => _toggleFavorite(game),
-                  ),
-                  MenuOption(
-                    title: !game.isWishlist
-                        ? 'Add to wishlist'
-                        : 'Remove from wishlist',
-                    icon: !game.isWishlist
-                        ? const Icon(MdiIcons.bookmark)
-                        : const Icon(MdiIcons.bookmarkOff),
-                    onTap: () => _toggleWishlist(game),
-                  ),
-                  MenuOption(
-                    title: !game.isPinned ? 'Pin game' : 'Unpin game',
-                    icon: !game.isPinned
-                        ? const Icon(MdiIcons.pin)
-                        : const Icon(MdiIcons.pinOff),
-                    onTap: () => _togglePin(game),
-                  ),
-                  MenuOption(
-                    title: 'Change this game\'s settings',
-                    icon: const Icon(Icons.games),
-                    onTap: () async {},
-                  ),
-                  MenuOption(
-                    title: 'Change systems settings',
-                    icon: const Icon(Icons.videogame_asset_rounded),
-                    onTap: () async {},
-                  ),
-                ],
-              );
-            }
-          },
+          onTap: () => _openMenuOptions(),
         ),
         Command(
           button: CommandButton.a,
@@ -534,6 +485,10 @@ class _GameListViewState extends ConsumerState<GameListView> {
             itemBuilder: (context, index, selected) {
               return GameListTile(
                 onTap: () => _onListTap(context, index),
+                onLongTap: () {
+                  _controller.jumpToIndex(index);
+                  _openMenuOptions();
+                },
                 selected: selected,
                 game: widget.gameList[index],
                 showSystemCode: widget.showSystemCode,
@@ -646,6 +601,108 @@ class _GameListViewState extends ConsumerState<GameListView> {
     }
     HapticFeedback.mediumImpact();
   }
+
+  Future<void> _openMenuOptions() async {
+    final game = ref.read(selectedGameProvider);
+    if (game != null) {
+      showMenuDialog(
+        context: context,
+        title: game.name,
+        options: [
+          MenuOption(
+            title: 'View game details',
+            icon: const Icon(Icons.info),
+            onTap: () => _openGameInfoDialog(),
+          ),
+          MenuOption(
+            title: 'Change game settings',
+            icon: const Icon(Icons.games),
+            onTap: () async {},
+          ),
+          MenuOption(
+            title: 'Change system settings',
+            icon: const Icon(Icons.videogame_asset_rounded),
+            onTap: () async {},
+          ),
+          MenuOption(
+            title:
+                !game.isFavorite ? 'Add to favorites' : 'Remove from favorites',
+            icon: !game.isFavorite
+                ? const Icon(MdiIcons.heart)
+                : const Icon(MdiIcons.heartOff),
+            onTap: () => _toggleFavorite(game),
+          ),
+          MenuOption(
+            title:
+                !game.isWishlist ? 'Add to wishlist' : 'Remove from wishlist',
+            icon: !game.isWishlist
+                ? const Icon(MdiIcons.bookmark)
+                : const Icon(MdiIcons.bookmarkOff),
+            onTap: () => _toggleWishlist(game),
+          ),
+          MenuOption(
+            title: !game.isPinned ? 'Pin game' : 'Unpin game',
+            icon: !game.isPinned
+                ? const Icon(MdiIcons.pin)
+                : const Icon(MdiIcons.pinOff),
+            onTap: () => _togglePin(game),
+          ),
+        ],
+      );
+    }
+  }
+
+  void _openGameInfoDialog() {
+    final game = ref.read(selectedGameProvider);
+    if (game != null) {
+      showMenuDialog(
+        context: context,
+        title: game.name,
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+        body: [
+          ListTile(
+            title: const Text('Name'),
+            subtitle: Text(game.name),
+          ),
+          ListTile(
+            title: const Text('ROM file location'),
+            subtitle: Text(game.fullpath),
+          ),
+          ListTile(
+            title: const Text('Cleaned up file name'),
+            subtitle: Text(game.cleanedUpFilename),
+          ),
+          ListTile(
+            title: const Text('Similarity'),
+            subtitle: Text(game.filenameCorrectness.toPercentage()),
+          ),
+          AsyncWidget(
+            value: ref.watch(selectedGameMetadataProvider),
+            data: (meta) {
+              return Column(
+                children: [
+                  ListTile(
+                    title: const Text('Release date'),
+                    subtitle:
+                        Text(meta?.releaseDate?.year.toString() ?? '(None)'),
+                  ),
+                  ListTile(
+                    title: const Text('Genre'),
+                    subtitle: Text(meta?.genres?.join(', ') ?? '(None)'),
+                  ),
+                  ListTile(
+                    title: const Text('Description'),
+                    subtitle: Text(meta?.description ?? '(None)'),
+                  ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+        ],
+      );
+    }
+  }
 }
 
 class GameListTile extends StatelessWidget {
@@ -655,9 +712,11 @@ class GameListTile extends StatelessWidget {
     required this.game,
     this.selected = false,
     this.showSystemCode = false,
+    this.onLongTap,
   }) : super(key: key);
 
   final VoidCallback onTap;
+  final VoidCallback? onLongTap;
   final Game game;
   final bool selected;
   final bool showSystemCode;
@@ -670,6 +729,7 @@ class GameListTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           alignment: AlignmentDirectional.centerStart,

@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:isar/isar.dart';
 import 'package:path/path.dart' as path;
+import 'package:string_similarity/string_similarity.dart';
 
 part 'models.g.dart';
 
@@ -60,6 +61,8 @@ class Emulator {
 }
 
 final fileExtensionRegex = RegExp(r'\.[\w]+$');
+final numbersInFrontRegex = RegExp(r'^\d+\s-\s');
+final inParenthesesRegex = RegExp(r'(\(([^)]+)\))|(\[([^]]+)\])');
 
 @collection
 class Game {
@@ -68,6 +71,7 @@ class Game {
   @Index()
   late String name;
 
+  @Index()
   late String filename;
 
   late String filepath;
@@ -91,13 +95,31 @@ class Game {
   bool get isPinned => pinIndex != null;
 
   @ignore
+  String get metadataKey => '$systemCode:$filename';
+
+  @ignore
   String get fileNameNoExtension => filename.replaceAll(fileExtensionRegex, '');
+
+  @ignore
+  double get filenameCorrectness =>
+      StringSimilarity.compareTwoStrings(name, cleanedUpFilename);
 
   @Index(unique: true, replace: true)
   String get fullpath => path.join(filepath, filename);
 
   @override
   String toString() => 'Game: $name';
+
+  @ignore
+  String get cleanedUpFilename {
+    String newName = filename;
+    newName = newName.replaceAll('_', ' ');
+    newName = newName.replaceAll(fileExtensionRegex, '');
+    newName = newName.replaceAll(numbersInFrontRegex, '');
+    newName = newName.replaceAll(inParenthesesRegex, '');
+    print('New name: $newName');
+    return newName;
+  }
 }
 
 @collection
@@ -111,7 +133,9 @@ class GameMetadata {
 
   late String description;
 
-  late String genre;
+  List<String>? genres;
+
+  DateTime? releaseDate;
 }
 
 class GameMetadataWithImages {

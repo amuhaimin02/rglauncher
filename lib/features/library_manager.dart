@@ -46,7 +46,7 @@ class LibraryManager {
 
     await db.updateEmulators(emulatorList);
 
-    // await downloadAndStoreSystemImages(systems: systemList);
+    await downloadAndStoreSystemImages(systems: systemList);
   }
 
   Future<void> scanLibrariesFromStorage({
@@ -64,8 +64,11 @@ class LibraryManager {
       {required List<System> systems}) async {
     final manager = services<MediaManager>();
     for (final system in systems) {
-      final imageBytes = await manager.downloadImage(system.thumbnailLink);
-      manager.saveSystemImageFile(imageBytes, system);
+      final file = manager.getSystemImageFile(system);
+      if (!file.existsSync()) {
+        final imageBytes = await manager.downloadImage(system.thumbnailLink);
+        manager.saveSystemImageFile(imageBytes, system);
+      }
     }
   }
 
@@ -107,7 +110,8 @@ Future<void> _doScrapeAndStoreGameImages(JsonMap args) async {
 
     print('Finding ${game.filename}');
     if (manager.getGameScreenshotFile(game).existsSync() &&
-        manager.getGameBoxArtFile(game).existsSync()) {
+        manager.getGameBoxArtFile(game).existsSync() &&
+        (await db.getMetadataForGame(game)) != null) {
       print('Skipping');
       continue;
     }

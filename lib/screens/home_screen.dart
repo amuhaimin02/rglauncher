@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:device_apps/device_apps.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +21,7 @@ import 'package:rglauncher/widgets/two_line_grid_view.dart';
 import '../features/app_launcher.dart';
 import '../utils/navigate.dart';
 import '../widgets/large_clock.dart';
+import '../widgets/menu_dialog.dart';
 import '../widgets/shadowed_text.dart';
 import 'game_list_screen.dart';
 
@@ -56,28 +59,8 @@ class _HomePageState extends ConsumerState<HomePage> {
         commands: [
           Command(
             button: CommandButton.x,
-            label: 'Refresh game list',
-            onTap: () {
-              final notifier = ref.read(notificationProvider.notifier);
-              notifier.runTask(
-                initialLabel: 'Scraping...',
-                failedLabel: 'Failed scraping!',
-                successLabel: 'Done scraping',
-                task: (update) async {
-                  final allGames = await ref.read(allGamesProvider.future);
-                  final totalGames = allGames.length;
-                  await services<LibraryManager>().scrapeAndStoreGameImages(
-                    progress: (filename) {
-                      update(
-                        'Scraping $filename',
-                        allGames.indexWhere((e) => e.filename == filename) /
-                            totalGames,
-                      );
-                    },
-                  );
-                },
-              );
-            },
+            label: 'Options',
+            onTap: () => _openMenuOptions(),
           ),
           Command(
             button: CommandButton.a,
@@ -295,6 +278,56 @@ class _HomePageState extends ConsumerState<HomePage> {
     final selectedIndex = ref.read(selectedMenuIndexProvider);
     _itemLauncher(selectedIndex);
   }
+
+  Future<void> _openMenuOptions() async {
+    showMenuDialog(
+      context: context,
+      options: [
+        MenuOption(
+          title: 'Refresh game lists',
+          icon: const Icon(Icons.refresh),
+          onTap: () async {
+            final notifier = ref.read(notificationProvider.notifier);
+            notifier.runTask(
+              initialLabel: 'Scanning game list...',
+              failedLabel: 'Scanning failed!',
+              successLabel: 'Game list refreshed',
+              task: (update) async {
+                await services<LibraryManager>().scanLibrariesFromStorage(
+                  storagePaths: [Directory('/storage/emulated/0/EmuROM')],
+                );
+              },
+            );
+          },
+        ),
+        MenuOption(
+          title: 'Start auto-scraping',
+          icon: const Icon(Icons.image),
+          onTap: () async {
+            final notifier = ref.read(notificationProvider.notifier);
+            notifier.runTask(
+              initialLabel: 'Scraping...',
+              failedLabel: 'Failed scraping!',
+              successLabel: 'Scraping completed',
+              task: (update) async {
+                final allGames = await ref.read(allGamesProvider.future);
+                final totalGames = allGames.length;
+                await services<LibraryManager>().scrapeAndStoreGameImages(
+                  progress: (filename) {
+                    update(
+                      'Scraping $filename',
+                      allGames.indexWhere((e) => e.filename == filename) /
+                          totalGames,
+                    );
+                  },
+                );
+              },
+            );
+          },
+        ),
+      ],
+    );
+  }
 }
 
 class SelectionWrapper extends ConsumerWidget {
@@ -326,8 +359,13 @@ class SelectionWrapper extends ConsumerWidget {
 }
 
 class MenuTile extends StatelessWidget {
-  const MenuTile({Key? key, this.label, this.icon, this.image, this.sublabel})
-      : super(key: key);
+  const MenuTile({
+    Key? key,
+    this.label,
+    this.icon,
+    this.image,
+    this.sublabel,
+  }) : super(key: key);
 
   final String? label;
   final IconData? icon;
@@ -339,7 +377,13 @@ class MenuTile extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Material(
-      borderRadius: BorderRadius.circular(16),
+      borderOnForeground: true,
+      shape: RoundedRectangleBorder(
+        side: image != null
+            ? const BorderSide(color: Colors.white38, width: 4)
+            : BorderSide.none,
+        borderRadius: BorderRadius.circular(16),
+      ),
       color: image != null ? Colors.black : Colors.white38,
       elevation: 2,
       clipBehavior: Clip.antiAlias,
@@ -354,6 +398,7 @@ class MenuTile extends StatelessWidget {
               )
             : null,
         child: ShadowedText(
+          enabled: image != null && (label != null || sublabel != null),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
             child: Stack(
@@ -380,7 +425,7 @@ class MenuTile extends StatelessWidget {
                   child: Icon(
                     icon,
                     size: 56,
-                    color: Colors.white38,
+                    color: Colors.white54,
                   ),
                 ),
               ],

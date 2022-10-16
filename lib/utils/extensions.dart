@@ -33,3 +33,9 @@ extension PrevNextIndexAccessList<E> on List<E> {
     }
   }
 }
+
+extension PercentageString on num {
+  String toPercentage({int fractionalDigits = 0}) {
+    return '${(this * 100).toStringAsFixed(fractionalDigits)} %';
+  }
+}

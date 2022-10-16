@@ -64,7 +64,7 @@ final selectedGameMetadataProvider = FutureProvider((ref) async {
   return await db.getMetadataForGame(game);
 });
 
-final scannedSystemProvider = FutureProvider((ref) async {
+final scannedSystemProvider = StreamProvider((ref) {
   final database = services<Database>();
   return database.getScannedSystems();
 });

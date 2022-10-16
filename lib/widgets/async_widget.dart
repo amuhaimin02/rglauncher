@@ -19,8 +19,9 @@ class AsyncWidget<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return value.when(
-        data: data,
-        error: error ?? (error, stack) => Text('$error\n$stack'),
-        loading: loading ?? () => const LoadingSpinner());
+      data: data,
+      error: error ?? (error, stack) => Text('$error\n$stack'),
+      loading: loading ?? () => const Center(child: LoadingSpinner()),
+    );
   }
 }

@@ -46,6 +46,24 @@ class Database {
 
   Future<void> refreshGames(List<Game> gameList) async {
     _isar.writeTxnSync(() {
+      final currentGames =
+          _isar.games.where().anyId().filenameProperty().findAllSync();
+      final deletedGames =
+          gameList.whereNot((item) => currentGames.contains(item.filename));
+      _isar.games
+          .filter()
+          .anyOf(
+              deletedGames, (q, element) => q.filenameEqualTo(element.filename))
+          .deleteAllSync();
+      for (final game in gameList) {
+        final meta = _isar.gameMetadatas
+            .where()
+            .keyEqualTo(game.metadataKey)
+            .findFirstSync();
+        if (meta != null) {
+          game.name = meta.title;
+        }
+      }
       _isar.games.putAllSync(gameList);
     });
   }
@@ -107,7 +125,7 @@ class Database {
   Future<void> saveGameMetadata(Game game, GameMetadata meta) async {
     await _isar.writeTxn(() async {
       await _isar.gameMetadatas.put(
-        meta..key = game.filename,
+        meta..key = game.metadataKey,
       );
       await _isar.games.put(
         game..name = meta.title.isNotEmpty ? meta.title : game.filename,
@@ -116,7 +134,7 @@ class Database {
   }
 
   Future<GameMetadata?> getMetadataForGame(Game game) async {
-    return _isar.gameMetadatas.getByKey(game.filename);
+    return _isar.gameMetadatas.getByKey(game.metadataKey);
   }
 
   Future<List<Emulator>> allEmulatorsBySystemCode(String systemCode) async {
@@ -127,13 +145,15 @@ class Database {
         .findAll();
   }
 
-  Future<List<System>> getScannedSystems() async {
-    final systemCodes =
-        await _isar.games.where().distinctBySystemCode().findAll();
-    return _isar.systems
-        .filter()
-        .anyOf(systemCodes, (s, game) => s.codeEqualTo(game.systemCode))
-        .findAll();
+  Stream<List<System>> getScannedSystems() {
+    return _isar.games
+        .where()
+        .distinctBySystemCode()
+        .watch(fireImmediately: true)
+        .map((systemCodes) => _isar.systems
+            .filter()
+            .anyOf(systemCodes, (s, game) => s.codeEqualTo(game.systemCode))
+            .findAllSync());
   }
 
   Stream<List<Game>> getFavoritedGames() {

@@ -128,10 +128,13 @@ final installedAppsProvider = FutureProvider((ref) async {
   return appList.cast<ApplicationWithIcon>().sortedBy((a) => a.appName);
 });
 
-final pinnedAppsProvider = FutureProvider((ref) async {
+final pinnedAppsProvider = StreamProvider.autoDispose((ref) async* {
   final allApps = await ref.watch(installedAppsProvider.future);
-  final pinnedApps = List.of(allApps)..shuffle();
-  return pinnedApps.take(6);
+  final db = services<Database>();
+  await for (final pinnedApps in db.getPinnedApps()) {
+    final packageNames = pinnedApps.map((e) => e.packageName);
+    yield allApps.where((app) => packageNames.contains(app.packageName));
+  }
 });
 
 final notificationProvider =

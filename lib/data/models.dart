@@ -149,3 +149,13 @@ class GameMetadataWithImages {
     this.screenshotImage,
   });
 }
+
+@collection
+class App {
+  Id id = Isar.autoIncrement;
+
+  late String name;
+
+  @Index(unique: true, replace: true)
+  late String packageName;
+}

@@ -14,6 +14,7 @@ class Database {
     EmulatorSchema,
     GameSchema,
     GameMetadataSchema,
+    AppSchema,
   ];
 
   static Future<Database> open({bool temporary = false}) async {
@@ -46,26 +47,39 @@ class Database {
 
   Future<void> refreshGames(List<Game> gameList) async {
     _isar.writeTxnSync(() {
-      final currentGames =
-          _isar.games.where().anyId().filenameProperty().findAllSync();
-      final deletedGames =
-          gameList.whereNot((item) => currentGames.contains(item.filename));
-      _isar.games
-          .filter()
-          .anyOf(
-              deletedGames, (q, element) => q.filenameEqualTo(element.filename))
-          .deleteAllSync();
+      final gamesToDelete = List.of(gameList);
       for (final game in gameList) {
-        final meta = _isar.gameMetadatas
-            .where()
-            .keyEqualTo(game.metadataKey)
-            .findFirstSync();
-        if (meta != null) {
-          game.name = meta.title;
+        final existingGame = _isar.games.getByFullpathSync(game.fullpath);
+
+        if (existingGame != null) {
+          existingGame.name = game.name;
+          _updateMetadata(existingGame);
+          _isar.games.putByFullpathSync(existingGame);
+        } else {
+          _updateMetadata(game);
+          _isar.games.putByFullpathSync(game);
         }
+        gamesToDelete.remove(game);
       }
-      _isar.games.putAllSync(gameList);
+      // Delete games not found in folders
+      if (gamesToDelete.isNotEmpty) {
+        _isar.games
+            .filter()
+            .anyOf(gamesToDelete,
+                (q, element) => q.fullpathEqualTo(element.fullpath))
+            .deleteAllSync();
+      }
     });
+  }
+
+  void _updateMetadata(Game game) {
+    final meta = _isar.gameMetadatas
+        .where()
+        .keyEqualTo(game.metadataKey)
+        .findFirstSync();
+    if (meta != null) {
+      game.name = meta.title;
+    }
   }
 
   Future<List<Game>> getAllGames() async {
@@ -208,5 +222,24 @@ class Database {
         .build()
         .watch(fireImmediately: true)
         .map((list) => list.firstOrNull);
+  }
+
+  Stream<List<App>> getPinnedApps() {
+    return _isar.apps.where().anyId().watch(fireImmediately: true);
+  }
+
+  Future<bool> togglePinApp(App app) async {
+    return await _isar.writeTxn(() async {
+      if (await _isar.apps
+          .where()
+          .packageNameEqualTo(app.packageName)
+          .isEmpty()) {
+        await _isar.apps.putByPackageName(app);
+        return true;
+      } else {
+        await _isar.apps.deleteByPackageName(app.packageName);
+        return false;
+      }
+    });
   }
 }

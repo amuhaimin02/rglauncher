@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:device_apps/src/plugin.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -58,11 +60,11 @@ class _AllAppsScreenState extends ConsumerState<AllAppsScreen> {
                               child: Stack(
                                 children: [
                                   Image.memory(
-                                    app.icon,
+                                    app.iconBytes as Uint8List,
                                     gaplessPlayback: true,
                                   ),
                                   if (pinnedApps.any((element) =>
-                                      element.packageName == app.packageName))
+                                  element.packageName == app.packageName))
                                     const Align(
                                       alignment: AlignmentDirectional.bottomEnd,
                                       child: Material(
@@ -82,7 +84,7 @@ class _AllAppsScreenState extends ConsumerState<AllAppsScreen> {
                               ),
                             ),
                             onTap: () {
-                              app.openApp();
+                              DeviceApps.openApp(app.packageName);
                             },
                             onLongPress: () {
                               _togglePinApp(app);
@@ -90,7 +92,7 @@ class _AllAppsScreenState extends ConsumerState<AllAppsScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            app.appName,
+                            app.name,
                             textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -106,12 +108,9 @@ class _AllAppsScreenState extends ConsumerState<AllAppsScreen> {
     );
   }
 
-  Future<void> _togglePinApp(Application application) async {
+  Future<void> _togglePinApp(App app) async {
     final notifier = ref.read(notificationProvider.notifier);
     final db = services<Database>();
-    final app = App()
-      ..name = application.appName
-      ..packageName = application.packageName;
 
     if (await db.togglePinApp(app)) {
       notifier.set(

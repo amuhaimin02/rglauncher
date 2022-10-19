@@ -227,9 +227,7 @@ class TwoLineHighlight extends ConsumerWidget {
         Positioned.fill(
           child: IgnorePointer(
             ignoring: true,
-            child: AnimatedContainer(
-              duration: defaultAnimationDuration,
-              curve: defaultAnimationCurve,
+            child: Container(
               decoration: BoxDecoration(
                 border: selectedIndex == index
                     ? Border.all(color: Colors.white, width: 4)

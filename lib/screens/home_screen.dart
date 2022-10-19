@@ -4,7 +4,6 @@ import 'package:device_apps/device_apps.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:palette_generator/palette_generator.dart';
 import 'package:rglauncher/data/configs.dart';
 import 'package:rglauncher/data/providers.dart';
 import 'package:rglauncher/features/library_manager.dart';
@@ -18,6 +17,7 @@ import 'package:rglauncher/widgets/gamepad_listener.dart';
 import 'package:rglauncher/widgets/launcher_scaffold.dart';
 import 'package:rglauncher/widgets/two_line_grid_view.dart';
 
+import '../data/models.dart';
 import '../features/app_launcher.dart';
 import '../utils/navigate.dart';
 import '../widgets/large_clock.dart';
@@ -237,10 +237,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   return [
                     for (final app in appList)
                       TwoLineGridItem(
-                        child: AppTile(
-                          appName: app.appName,
-                          icon: app.icon,
-                        ),
+                        child: AppTile(app: app),
                         onTap: () {
                           DeviceApps.openApp(app.packageName);
                         },
@@ -294,7 +291,10 @@ class _HomePageState extends ConsumerState<HomePage> {
               successLabel: 'Game list refreshed',
               task: (update) async {
                 await services<LibraryManager>().scanLibrariesFromStorage(
-                  storagePaths: [Directory('/storage/emulated/0/EmuROM')],
+                  storagePaths: [
+                    Directory('/storage/emulated/0/EmuROM'),
+                    Directory('/storage/4A8F-6284/RetroidPocketGames/ROMs'),
+                  ],
                 );
               },
             );
@@ -384,7 +384,7 @@ class MenuTile extends StatelessWidget {
             : BorderSide.none,
         borderRadius: BorderRadius.circular(16),
       ),
-      color: image != null ? Colors.black : Colors.white38,
+      color: image != null ? Colors.black : Colors.white24,
       elevation: 2,
       clipBehavior: Clip.antiAlias,
       child: Container(
@@ -440,44 +440,37 @@ class MenuTile extends StatelessWidget {
 class AppTile extends StatelessWidget {
   const AppTile({
     super.key,
-    required this.icon,
-    required this.appName,
+    required this.app,
   });
 
-  final Uint8List icon;
-  final String appName;
+  final App app;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final appIconImage = MemoryImage(icon);
-
-    return FutureBuilder<PaletteGenerator>(
-      future: PaletteGenerator.fromImageProvider(appIconImage),
-      builder: (context, snapshot) {
-        final palette = snapshot.data?.mutedColor;
-        return Material(
-          borderRadius: BorderRadius.circular(16),
-          color: palette?.color ?? Colors.white54,
-          elevation: 2,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-            child: Stack(
-              children: [
-                Text(appName, style: textTheme.titleMedium),
-                Align(
-                  alignment: Alignment.bottomRight,
-                  child: Image(
-                    image: appIconImage,
-                    width: 60,
-                    height: 60,
-                  ),
-                ),
-              ],
+    final appIconImage = MemoryImage(Uint8List.fromList(app.iconBytes!));
+    return Material(
+      borderRadius: BorderRadius.circular(16),
+      color: app.backgroundColorHex != null
+          ? Color(app.backgroundColorHex!)
+          : null,
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        child: Stack(
+          children: [
+            Text(app.name, style: textTheme.titleMedium),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Image(
+                image: appIconImage,
+                width: 60,
+                height: 60,
+              ),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 }

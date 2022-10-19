@@ -13,7 +13,7 @@ class ChangeableBackground extends ConsumerWidget {
     final image = ref.watch(currentBackgroundImageProvider);
 
     return Container(
-      color: Colors.grey.shade900,
+      color: const Color(0xff101010),
       child: AnimatedSwitcher(
         duration: defaultAnimationDuration,
         child: SizedBox.expand(

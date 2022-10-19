@@ -1,9 +1,12 @@
+import 'dart:typed_data';
+
 import 'package:battery_plus/battery_plus.dart';
 import 'package:collection/collection.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:device_apps/device_apps.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:palette_generator/palette_generator.dart';
 import 'package:rglauncher/features/notification_manager.dart';
 import 'package:rglauncher/features/services.dart';
 import 'package:rglauncher/utils/extensions.dart';
@@ -20,7 +23,7 @@ final batteryLevelProvider = StreamProvider.autoDispose<int>((ref) {
   final battery = ref.watch(batteryProvider);
   return onceAndPeriodic(
     const Duration(seconds: 10),
-    (count) {
+        (count) {
       return battery.batteryLevel;
     },
   ).asyncMap((event) async => await event);
@@ -31,21 +34,21 @@ final batteryLevelProvider = StreamProvider.autoDispose<int>((ref) {
 // });
 
 final connectivityStateProvider =
-    StreamProvider.autoDispose<ConnectivityResult>((ref) {
+StreamProvider.autoDispose<ConnectivityResult>((ref) {
   return Connectivity().onConnectivityChanged;
 });
 
 final commandProvider = StateProvider<List<Command>>((ref) => []);
 
 final allSystemsProvider = FutureProvider(
-  (ref) async {
+      (ref) async {
     final db = services<Database>();
     return db.getAllSystems();
   },
 );
 
 final systemEmulatorsProvider = FutureProvider.family<List<Emulator>, String>(
-  (ref, systemCode) async {
+      (ref, systemCode) async {
     final db = services<Database>();
     return db.allEmulatorsBySystemCode(systemCode);
   },
@@ -71,7 +74,7 @@ final scannedSystemProvider = StreamProvider((ref) {
 });
 
 final gameLibraryProvider =
-    StreamProvider.family<List<Game>, System>((ref, system) {
+StreamProvider.family<List<Game>, System>((ref, system) {
   final db = services<Database>();
   return db.getGamesBySystem(system);
 });
@@ -117,27 +120,44 @@ final continueGameProvider = StreamProvider((ref) {
 });
 
 final currentBackgroundImageProvider =
-    StateProvider<ImageProvider?>((ref) => null);
+StateProvider<ImageProvider?>((ref) => null);
 
-final installedAppsProvider = FutureProvider((ref) async {
+final installedAppsProvider = FutureProvider<List<App>>((ref) async {
   final appList = await DeviceApps.getInstalledApplications(
     onlyAppsWithLaunchIntent: true,
     includeSystemApps: true,
     includeAppIcons: true,
   );
-  return appList.cast<ApplicationWithIcon>().sortedBy((a) => a.appName);
+  final apps = appList
+      .cast<ApplicationWithIcon>()
+      .map(
+        (a) => App()
+          ..name = a.appName
+          ..packageName = a.packageName
+          ..iconBytes = a.icon,
+      )
+      .sortedBy((a) => a.name);
+  for (final app in apps) {
+    app.backgroundColorHex = (await PaletteGenerator.fromImageProvider(
+            MemoryImage(app.iconBytes as Uint8List)))
+        .mutedColor
+        ?.color
+        .value;
+  }
+  return apps;
 });
 
-final pinnedAppsProvider = StreamProvider.autoDispose((ref) async* {
-  final allApps = await ref.watch(installedAppsProvider.future);
+final pinnedAppsProvider = StreamProvider.autoDispose<List<App>>((ref) {
+  // final allApps = await ref.watch(installedAppsProvider.future);
   final db = services<Database>();
-  await for (final pinnedApps in db.getPinnedApps()) {
-    final packageNames = pinnedApps.map((e) => e.packageName);
-    yield allApps.where((app) => packageNames.contains(app.packageName));
-  }
+  // await for (final pinnedApps in db.getPinnedApps()) {
+  //   final packageNames = pinnedApps.map((e) => e.packageName);
+  //   yield allApps.where((app) => packageNames.contains(app.packageName));
+  // }
+  return db.getPinnedApps();
 });
 
 final notificationProvider =
-    StateNotifierProvider<NotificationManager, NotificationMessage?>(
-  (ref) => NotificationManager(),
+StateNotifierProvider<NotificationManager, NotificationMessage?>(
+      (ref) => NotificationManager(),
 );

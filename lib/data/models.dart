@@ -158,4 +158,8 @@ class App {
 
   @Index(unique: true, replace: true)
   late String packageName;
+
+  List<int>? iconBytes;
+
+  int? backgroundColorHex;
 }
